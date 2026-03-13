@@ -166,18 +166,25 @@ header { padding:22px 20px 0; display:flex; justify-content:space-between; align
 
 <div class="warn" id="warnBox"></div>
 
+<!-- Mic Test Panel -->
+<div style="margin:0 20px 12px;background:#1a1814;border-radius:12px;padding:12px;">
+  <div style="color:#e8ff47;font-size:11px;font-weight:700;margin-bottom:8px;font-family:monospace;">🔍 MIC TEST</div>
+  <button onclick="runMicTest()" style="background:#e8ff47;color:#1a1814;border:none;border-radius:8px;padding:8px 16px;font-weight:700;font-size:12px;cursor:pointer;margin-bottom:8px;">▶ Run Mic Test</button>
+  <div id="testLog" style="font-family:monospace;font-size:11px;color:#7aff7a;line-height:1.8;"></div>
+</div>
+
 <div class="tx-wrap" id="txWrap">
-  <div class="tx-inner" id="txInner"><span class="ph">Your words will appear here\u2026</span></div>
+  <div class="tx-inner" id="txInner"><span class="ph">Your words will appear here…</span></div>
 </div>
 
 <div class="proc" id="proc">
   <div class="dots"><span></span><span></span><span></span></div>
-  <span id="procLabel">Transcribing\u2026</span>
+  <span id="procLabel">Transcribing…</span>
 </div>
 
 <div class="sec-head">
   <span class="sec-label">Your Notes</span>
-  <button class="add-cat" onclick="openAddModal()">\uff0b New category</button>
+  <button class="add-cat" onclick="openAddModal()">＋ New category</button>
 </div>
 
 <div class="cats" id="catsEl"></div>
@@ -188,7 +195,7 @@ header { padding:22px 20px 0; display:flex; justify-content:space-between; align
 <div class="overlay" id="addOverlay" onclick="bgClose(event,'addOverlay')">
   <div class="modal">
     <div class="modal-title">New Category</div>
-    <input type="text" id="newCatName" placeholder="e.g. Work, Health, Finance\u2026" maxlength="30"/>
+    <input type="text" id="newCatName" placeholder="e.g. Work, Health, Finance…" maxlength="30"/>
     <div class="swatch-row" id="swatchRow"></div>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeOverlay('addOverlay')">Cancel</button>
@@ -201,7 +208,7 @@ header { padding:22px 20px 0; display:flex; justify-content:space-between; align
 <div class="overlay" id="keepOverlay" onclick="bgClose(event,'keepOverlay')">
   <div class="keep-modal">
     <div class="keep-logo">
-      <div class="keep-icon">\ud83d\udcd2</div>
+      <div class="keep-icon">📒</div>
       <h3>Export to Google Keep</h3>
     </div>
     <p class="keep-sub">Copy your notes below, then paste into a new Google Keep note.</p>
@@ -210,10 +217,10 @@ header { padding:22px 20px 0; display:flex; justify-content:space-between; align
       <div class="kp-body" id="kpBody"></div>
     </div>
     <div class="keep-btns">
-      <a class="keep-open" href="https://keep.google.com" target="_blank" rel="noopener">\ud83d\udcd2 Open Google Keep</a>
-      <button class="keep-copy" onclick="keepCopy()">\ud83d\udccb Copy</button>
+      <a class="keep-open" href="https://keep.google.com" target="_blank" rel="noopener">📒 Open Google Keep</a>
+      <button class="keep-copy" onclick="keepCopy()">📋 Copy</button>
     </div>
-    <div class="keep-hint">In Keep: tap \uff0b \u2192 paste \u2192 save!</div>
+    <div class="keep-hint">In Keep: tap ＋ → paste → save!</div>
   </div>
 </div>
 
@@ -223,12 +230,12 @@ header { padding:22px 20px 0; display:flex; justify-content:space-between; align
 const COLORS = ['#2d7d46','#d4720a','#7b3fbe','#1a6fa8','#c0392b','#16a085','#8e44ad','#2980b9','#d35400','#7f8c8d'];
 
 let cats = [
-  {id:'grocery', name:'\ud83d\uded2 Groceries', color:'#2d7d46', notes:[], open:false},
-  {id:'kids',    name:'\ud83d\udc68\u200d\ud83d\udc69\u200d\ud83d\udc67 Kids',     color:'#d4720a', notes:[], open:false},
-  {id:'shopping',name:'\ud83d\udecd\ufe0f Shopping',  color:'#7b3fbe', notes:[], open:false},
-  {id:'memo',    name:'\ud83d\udcdd Memo',       color:'#1a6fa8', notes:[], open:false},
-  {id:'parents', name:'\ud83d\udc74 Parents',    color:'#c0392b', notes:[], open:false},
-  {id:'other',   name:'\ud83d\udca1 Other',      color:'#7f8c8d', notes:[], open:false},
+  {id:'grocery', name:'🛒 Groceries', color:'#2d7d46', notes:[], open:false},
+  {id:'kids',    name:'👨‍👩‍👧 Kids',     color:'#d4720a', notes:[], open:false},
+  {id:'shopping',name:'🛍️ Shopping',  color:'#7b3fbe', notes:[], open:false},
+  {id:'memo',    name:'📝 Memo',       color:'#1a6fa8', notes:[], open:false},
+  {id:'parents', name:'👴 Parents',    color:'#c0392b', notes:[], open:false},
+  {id:'other',   name:'💡 Other',      color:'#7f8c8d', notes:[], open:false},
 ];
 
 let selColor = COLORS[0];
@@ -239,7 +246,49 @@ let timerInterval = null;
 let timerSecs = 0;
 let keepCopyText = '';
 
-/* \u2500\u2500 Render \u2500\u2500 */
+function log(msg){ const el=document.getElementById('testLog'); el.innerHTML += msg+'<br>'; }
+
+async function runMicTest(){
+  document.getElementById('testLog').innerHTML = '';
+  log('Testing...');
+
+  // 1. Check MediaRecorder
+  if(!window.MediaRecorder){ log('❌ MediaRecorder not supported'); return; }
+  log('✅ MediaRecorder supported');
+
+  // 2. Check supported formats
+  const formats = ['audio/webm;codecs=opus','audio/webm','audio/ogg','audio/mp4'];
+  formats.forEach(f => log((MediaRecorder.isTypeSupported(f)?'✅':'❌')+' '+f));
+
+  // 3. Request mic
+  log('Requesting mic...');
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    log('✅ Mic granted! Tracks: '+stream.getAudioTracks().length);
+    log('Track: '+stream.getAudioTracks()[0].label);
+
+    // 4. Try recording 2 seconds
+    const mime = ['audio/webm;codecs=opus','audio/webm','audio/ogg','audio/mp4'].find(t=>MediaRecorder.isTypeSupported(t))||'';
+    log('Using: '+(mime||'default'));
+    const mr = new MediaRecorder(stream, mime?{mimeType:mime}:{});
+    const chunks = [];
+    mr.ondataavailable = e => { if(e.data.size>0){ chunks.push(e.data); log('Chunk: '+e.data.size+' bytes'); } };
+    mr.onstop = () => {
+      stream.getTracks().forEach(t=>t.stop());
+      const total = chunks.reduce((s,c)=>s+c.size,0);
+      log('✅ Total recorded: '+total+' bytes');
+      if(total < 100) log('⚠️ Very small — mic may be muted');
+      else log('🎉 Mic working! Try the main button now.');
+    };
+    mr.start(500);
+    log('Recording 2s — speak now!');
+    setTimeout(()=>mr.stop(), 2000);
+  } catch(e){
+    log('❌ Mic error: '+e.name+' — '+e.message);
+  }
+}
+
+
 function render(){
   const el = document.getElementById('catsEl');
   el.innerHTML = ''; let total = 0;
@@ -249,10 +298,10 @@ function render(){
     card.className = 'cat-card' + (cat.open ? ' open' : '');
     card.id = 'cc-' + cat.id;
     const notesH = cat.notes.length === 0
-      ? `<div class="empty-note">No notes yet \u2014 say something!</div>`
-      : cat.notes.map((n,i) => `<div class="note-row"><div class="note-time">${n.t}</div><div class="note-txt">${esc(n.text)}</div><button class="del-btn" onclick="delNote('${cat.id}',${i})">\u2715</button></div>`).join('');
-    const footH = cat.notes.length > 0 ? `<div class="cat-footer"><button class="foot-btn keep" onclick="openKeep('${cat.id}')">\ud83d\udcd2 Keep</button><button class="foot-btn" onclick="copyAll('${cat.id}')">\ud83d\udccb Copy</button><button class="foot-btn danger" onclick="clearCat('${cat.id}')">\ud83d\uddd1 Clear</button></div>` : '';
-    card.innerHTML = `<div class="cat-head" onclick="toggleCat('${cat.id}')"><div class="cat-stripe" style="background:${cat.color}"></div><div class="cat-name">${esc(cat.name)}</div><div class="cat-cnt">${cat.notes.length}</div><span class="chevron">\u25bc</span></div><div class="cat-body">${notesH}${footH}</div>`;
+      ? `<div class="empty-note">No notes yet — say something!</div>`
+      : cat.notes.map((n,i) => `<div class="note-row"><div class="note-time">${n.t}</div><div class="note-txt">${esc(n.text)}</div><button class="del-btn" onclick="delNote('${cat.id}',${i})">✕</button></div>`).join('');
+    const footH = cat.notes.length > 0 ? `<div class="cat-footer"><button class="foot-btn keep" onclick="openKeep('${cat.id}')">📒 Keep</button><button class="foot-btn" onclick="copyAll('${cat.id}')">📋 Copy</button><button class="foot-btn danger" onclick="clearCat('${cat.id}')">🗑 Clear</button></div>` : '';
+    card.innerHTML = `<div class="cat-head" onclick="toggleCat('${cat.id}')"><div class="cat-stripe" style="background:${cat.color}"></div><div class="cat-name">${esc(cat.name)}</div><div class="cat-cnt">${cat.notes.length}</div><span class="chevron">▼</span></div><div class="cat-body">${notesH}${footH}</div>`;
     el.appendChild(card);
   });
   document.getElementById('totalPill').textContent = total + (total===1?' note':' notes');
@@ -264,20 +313,20 @@ function clearCat(id){ const c=cats.find(x=>x.id===id); if(c){c.notes=[];render(
 function copyAll(id){
   const c=cats.find(x=>x.id===id);
   if(!c||!c.notes.length) return;
-  navigator.clipboard.writeText(c.name+'\n'+c.notes.map(n=>'\u2022 '+n.text).join('\n')).then(()=>showToast('Copied!'));
+  navigator.clipboard.writeText(c.name+'\n'+c.notes.map(n=>'• '+n.text).join('\n')).then(()=>showToast('Copied!'));
 }
 
 function openKeep(id){
   const c=cats.find(x=>x.id===id); if(!c||!c.notes.length) return;
-  const body=c.notes.map(n=>'\u2022 '+n.text).join('\n');
+  const body=c.notes.map(n=>'• '+n.text).join('\n');
   document.getElementById('kpTitle').textContent=c.name;
   document.getElementById('kpBody').textContent=body;
   keepCopyText=c.name+'\n'+body;
   openOverlay('keepOverlay');
 }
-function keepCopy(){ navigator.clipboard.writeText(keepCopyText).then(()=>showToast('Copied! Paste into Keep \ud83d\udcd2')); }
+function keepCopy(){ navigator.clipboard.writeText(keepCopyText).then(()=>showToast('Copied! Paste into Keep 📒')); }
 
-/* \u2500\u2500 Recording with MediaRecorder \u2500\u2500 */
+/* ── Recording with MediaRecorder ── */
 function toggleRec(){ isRec ? stopRec() : startRec(); }
 
 async function startRec(){
@@ -311,7 +360,7 @@ async function startRec(){
     document.getElementById('recState').className = 'record-state live';
     document.getElementById('waveform').classList.add('show');
     document.getElementById('recTimer').classList.add('show');
-    document.getElementById('txInner').innerHTML = '<span class="ph">\ud83c\udf99\ufe0f Recording\u2026 tap to stop</span>';
+    document.getElementById('txInner').innerHTML = '<span class="ph">🎙️ Recording… tap to stop</span>';
     document.getElementById('txWrap').className = 'tx-wrap listening';
     document.getElementById('warnBox').style.display = 'none';
 
@@ -328,7 +377,7 @@ async function startRec(){
 
   } catch(err) {
     const warn = document.getElementById('warnBox');
-    warn.textContent = '\u26a0\ufe0f Mic access denied \u2014 tap the \ud83d\udd12 lock in Chrome address bar \u2192 allow Microphone \u2192 refresh.';
+    warn.textContent = '⚠️ Mic access denied — tap the 🔒 lock in Chrome address bar → allow Microphone → refresh.';
     warn.style.display = 'block';
   }
 }
@@ -347,11 +396,11 @@ function stopRec(){
   document.getElementById('recTimer').classList.remove('show');
 }
 
-/* \u2500\u2500 Send audio to Claude for transcription + categorization \u2500\u2500 */
+/* ── Send audio to Claude for transcription + categorization ── */
 async function processAudio(blob){
-  document.getElementById('procLabel').textContent = 'Transcribing\u2026';
+  document.getElementById('procLabel').textContent = 'Transcribing…';
   document.getElementById('proc').classList.add('show');
-  document.getElementById('txInner').innerHTML = '<span class="ph">Processing your voice\u2026</span>';
+  document.getElementById('txInner').innerHTML = '<span class="ph">Processing your voice…</span>';
 
   try {
     // Convert blob to base64
@@ -421,7 +470,7 @@ Rules for items:
     }
 
     // Add notes
-    document.getElementById('procLabel').textContent = 'Categorizing\u2026';
+    document.getElementById('procLabel').textContent = 'Categorizing…';
     const t = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
     (parsed.items || []).forEach(item => {
       const c = cats.find(x => x.id === item.categoryId);
@@ -437,7 +486,7 @@ Rules for items:
 
     const count = (parsed.items||[]).length;
     const name = cats.find(c=>c.id===parsed.items?.[0]?.categoryId)?.name||'notes';
-    showToast(count > 1 ? `Sorted into ${count} categories \u2713` : `Added to ${name} \u2713`);
+    showToast(count > 1 ? `Sorted into ${count} categories ✓` : `Added to ${name} ✓`);
 
   } catch(err) {
     console.error(err);
@@ -445,12 +494,12 @@ Rules for items:
     const warn = document.getElementById('warnBox');
 
     if(err.message && err.message.includes('audio')){
-      warn.textContent = '\u26a0\ufe0f Audio format not supported. Try speaking for at least 2 seconds.';
+      warn.textContent = '⚠️ Audio format not supported. Try speaking for at least 2 seconds.';
     } else {
-      warn.textContent = '\u26a0\ufe0f Could not process audio: ' + (err.message || 'unknown error') + '. Try again.';
+      warn.textContent = '⚠️ Could not process audio: ' + (err.message || 'unknown error') + '. Try again.';
     }
     warn.style.display = 'block';
-    document.getElementById('txInner').innerHTML = '<span class="ph">Your words will appear here\u2026</span>';
+    document.getElementById('txInner').innerHTML = '<span class="ph">Your words will appear here…</span>';
     document.getElementById('txWrap').className = 'tx-wrap';
   }
 
@@ -466,7 +515,7 @@ function blobToBase64(blob){
   });
 }
 
-/* \u2500\u2500 Add Category \u2500\u2500 */
+/* ── Add Category ── */
 function openAddModal(){
   document.getElementById('newCatName').value='';
   selColor=COLORS[0]; renderSwatches();
@@ -474,4 +523,33 @@ function openAddModal(){
   setTimeout(()=>document.getElementById('newCatName').focus(),120);
 }
 function renderSwatches(){
-  const row=
+  const row=document.getElementById('swatchRow'); row.innerHTML='';
+  COLORS.forEach(c=>{
+    const s=document.createElement('div');
+    s.className='swatch'+(c===selColor?' sel':''); s.style.background=c;
+    s.onclick=()=>{selColor=c;renderSwatches();};
+    row.appendChild(s);
+  });
+}
+function submitCat(){
+  const name=document.getElementById('newCatName').value.trim();
+  if(!name){showToast('Enter a name');return;}
+  cats.push({id:'c'+Date.now(),name,color:selColor,notes:[],open:false});
+  closeOverlay('addOverlay'); render(); showToast('Category added!');
+}
+
+/* ── Helpers ── */
+function openOverlay(id){document.getElementById(id).classList.add('show');}
+function closeOverlay(id){document.getElementById(id).classList.remove('show');}
+function bgClose(e,id){if(e.target.classList.contains('overlay'))closeOverlay(id);}
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2500);
+}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+render();
+</script>
+</body>
+</html>
