@@ -7,284 +7,129 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #f7f5f0;
-  --card: #ffffff;
-  --border: #e8e4dc;
-  --text: #1a1814;
-  --muted: #9b9488;
-  --accent: #2d5a27;
-  --accent-light: #e8f5e1;
+  --bg: #f7f5f0; --card: #fff; --border: #e8e4dc;
+  --text: #1a1814; --muted: #9b9488;
+  --accent: #2d5a27; --accent-light: #e8f5e1;
   --shadow: 0 2px 12px rgba(0,0,0,0.06);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.1);
 }
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  min-height: 100vh;
-  max-width: 480px;
-  margin: 0 auto;
-}
-.app { padding-bottom: 40px; }
+body { background:var(--bg); color:var(--text); font-family:'Plus Jakarta Sans',sans-serif; min-height:100vh; max-width:480px; margin:0 auto; }
+.app { padding-bottom:40px; }
 
-/* Header */
-header {
-  padding: 22px 20px 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+header { padding:22px 20px 0; display:flex; justify-content:space-between; align-items:center; }
 .logo { font-family:'Instrument Serif',serif; font-size:26px; letter-spacing:-0.5px; }
 .logo em { font-style:italic; color:var(--accent); }
-.total-pill {
-  background:var(--accent); color:white;
-  font-size:11px; font-weight:700;
-  padding:4px 12px; border-radius:20px; letter-spacing:0.05em;
-}
+.total-pill { background:var(--accent); color:white; font-size:11px; font-weight:700; padding:4px 12px; border-radius:20px; }
 
-/* Record */
-.record-section {
-  padding:24px 20px 14px;
-  display:flex; flex-direction:column; align-items:center; gap:12px;
-}
+.record-section { padding:24px 20px 14px; display:flex; flex-direction:column; align-items:center; gap:12px; }
 .record-ring { position:relative; width:88px; height:88px; }
-.pulse-ring {
-  position:absolute; inset:-8px; border-radius:50%;
-  border:2px solid #e74c3c; opacity:0;
-}
-.recording .pulse-ring { animation: pulse 1.5s ease-out infinite; }
-@keyframes pulse {
-  0% { transform:scale(1); opacity:0.5; }
-  100% { transform:scale(1.4); opacity:0; }
-}
+.pulse-ring { position:absolute; inset:-8px; border-radius:50%; border:2px solid #e74c3c; opacity:0; }
+.recording .pulse-ring { animation:pulse 1.5s ease-out infinite; }
+@keyframes pulse { 0%{transform:scale(1);opacity:.5} 100%{transform:scale(1.4);opacity:0} }
 .record-btn {
   width:88px; height:88px; border-radius:50%;
   background:var(--card); border:2px solid var(--border);
   box-shadow:var(--shadow-lg); cursor:pointer;
   display:flex; align-items:center; justify-content:center;
-  transition:all 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  transition:all .25s cubic-bezier(.34,1.56,.64,1);
   outline:none; position:relative; z-index:1;
 }
-.record-btn:active { transform:scale(0.93); }
+.record-btn:active { transform:scale(.93); }
 .record-btn.on { background:#fff5f5; border-color:#e74c3c; }
 .mic-svg { width:32px; height:32px; }
-.record-state {
-  font-size:12px; font-weight:700; color:var(--muted);
-  letter-spacing:0.08em; text-transform:uppercase;
-}
+.record-state { font-size:12px; font-weight:700; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; }
 .record-state.live { color:#e74c3c; }
 
-/* Transcript */
-.tx-wrap {
-  margin:0 20px;
-  background:var(--card); border:1.5px solid var(--border);
-  border-radius:16px; padding:14px 16px; min-height:54px;
-  box-shadow:var(--shadow); transition:border-color 0.2s;
-}
+/* Timer */
+.rec-timer { font-size:13px; font-weight:700; color:#e74c3c; font-variant-numeric:tabular-nums; display:none; }
+.rec-timer.show { display:block; }
+
+/* Waveform bars */
+.waveform { display:none; gap:3px; align-items:center; height:28px; }
+.waveform.show { display:flex; }
+.wave-bar { width:4px; background:#e74c3c; border-radius:4px; animation:wave 0.8s ease-in-out infinite; }
+.wave-bar:nth-child(2){animation-delay:.1s}.wave-bar:nth-child(3){animation-delay:.2s}
+.wave-bar:nth-child(4){animation-delay:.3s}.wave-bar:nth-child(5){animation-delay:.4s}
+@keyframes wave { 0%,100%{height:6px} 50%{height:22px} }
+
+.tx-wrap { margin:0 20px; background:var(--card); border:1.5px solid var(--border); border-radius:16px; padding:14px 16px; min-height:54px; box-shadow:var(--shadow); transition:border-color .2s; }
 .tx-wrap.listening { border-color:#e74c3c; }
 .tx-wrap.done { border-color:var(--accent); }
 .tx-inner { font-size:14px; line-height:1.65; }
 .ph { color:var(--muted); font-style:italic; font-size:13px; }
 
-/* Processing */
-.proc {
-  margin:10px 20px 0; display:none;
-  align-items:center; gap:8px;
-  font-size:12px; font-weight:600; color:var(--muted);
-}
+.proc { margin:10px 20px 0; display:none; align-items:center; gap:8px; font-size:12px; font-weight:600; color:var(--muted); }
 .proc.show { display:flex; }
-.dots span {
-  display:inline-block; width:4px; height:4px;
-  background:var(--accent); border-radius:50%;
-  animation:db 1.2s infinite; margin-right:2px;
-}
-.dots span:nth-child(2) { animation-delay:.2s; }
-.dots span:nth-child(3) { animation-delay:.4s; }
-@keyframes db {
-  0%,80%,100% { transform:translateY(0); opacity:.4; }
-  40% { transform:translateY(-5px); opacity:1; }
-}
+.dots span { display:inline-block; width:4px; height:4px; background:var(--accent); border-radius:50%; animation:db 1.2s infinite; margin-right:2px; }
+.dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
+@keyframes db { 0%,80%,100%{transform:translateY(0);opacity:.4} 40%{transform:translateY(-5px);opacity:1} }
 
-/* Section */
-.sec-head {
-  padding:20px 20px 10px;
-  display:flex; justify-content:space-between; align-items:center;
-}
-.sec-label {
-  font-size:11px; font-weight:700;
-  letter-spacing:0.1em; text-transform:uppercase; color:var(--muted);
-}
-.add-cat {
-  background:none; border:1.5px dashed var(--border);
-  color:var(--muted); font-family:'Plus Jakarta Sans',sans-serif;
-  font-size:11px; font-weight:600; padding:5px 12px;
-  border-radius:20px; cursor:pointer; transition:all .2s;
-}
+.warn { margin:0 20px 10px; background:#fff8e6; border:1px solid #f4c842; border-radius:10px; padding:9px 13px; font-size:12px; color:#8a6b00; display:none; }
+
+.sec-head { padding:20px 20px 10px; display:flex; justify-content:space-between; align-items:center; }
+.sec-label { font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.add-cat { background:none; border:1.5px dashed var(--border); color:var(--muted); font-family:'Plus Jakarta Sans',sans-serif; font-size:11px; font-weight:600; padding:5px 12px; border-radius:20px; cursor:pointer; transition:all .2s; }
 .add-cat:hover { border-color:var(--accent); color:var(--accent); }
 
-/* Cards */
 .cats { padding:0 20px; display:flex; flex-direction:column; gap:8px; }
-.cat-card {
-  background:var(--card); border:1.5px solid var(--border);
-  border-radius:16px; overflow:hidden; box-shadow:var(--shadow);
-}
-.cat-card.flash { animation:fl 0.8s ease forwards; }
-@keyframes fl {
-  0% { box-shadow:0 0 0 4px rgba(45,90,39,0.25); }
-  100% { box-shadow:var(--shadow); }
-}
-.cat-head {
-  display:flex; align-items:center; gap:10px;
-  padding:13px 15px; cursor:pointer; user-select:none;
-}
+.cat-card { background:var(--card); border:1.5px solid var(--border); border-radius:16px; overflow:hidden; box-shadow:var(--shadow); }
+.cat-card.flash { animation:fl .8s ease forwards; }
+@keyframes fl { 0%{box-shadow:0 0 0 4px rgba(45,90,39,.25)} 100%{box-shadow:var(--shadow)} }
+.cat-head { display:flex; align-items:center; gap:10px; padding:13px 15px; cursor:pointer; user-select:none; }
 .cat-stripe { width:4px; height:28px; border-radius:4px; flex-shrink:0; }
 .cat-name { font-weight:700; font-size:14px; flex:1; }
-.cat-cnt {
-  background:var(--bg); border:1px solid var(--border);
-  font-size:11px; font-weight:700; color:var(--muted);
-  padding:2px 9px; border-radius:10px;
-}
+.cat-cnt { background:var(--bg); border:1px solid var(--border); font-size:11px; font-weight:700; color:var(--muted); padding:2px 9px; border-radius:10px; }
 .chevron { font-size:11px; color:var(--muted); transition:transform .2s; }
 .cat-card.open .chevron { transform:rotate(180deg); }
 .cat-body { display:none; border-top:1px solid var(--border); }
 .cat-card.open .cat-body { display:block; }
-
-.note-row {
-  display:flex; gap:10px; align-items:flex-start;
-  padding:10px 15px; border-bottom:1px solid var(--border);
-  animation:ni .2s ease;
-}
+.note-row { display:flex; gap:10px; align-items:flex-start; padding:10px 15px; border-bottom:1px solid var(--border); animation:ni .2s ease; }
 .note-row:last-of-type { border-bottom:none; }
 @keyframes ni { from{opacity:0;transform:translateX(-6px)} to{opacity:1;transform:translateX(0)} }
-.note-time {
-  font-size:10px; color:var(--muted); font-weight:600;
-  font-variant-numeric:tabular-nums; margin-top:3px;
-  flex-shrink:0; min-width:36px;
-}
+.note-time { font-size:10px; color:var(--muted); font-weight:600; margin-top:3px; flex-shrink:0; min-width:36px; }
 .note-txt { flex:1; font-size:13px; line-height:1.55; }
-.del-btn {
-  background:none; border:none; cursor:pointer;
-  font-size:13px; color:var(--muted);
-  opacity:0; transition:opacity .15s; padding:2px; flex-shrink:0;
-}
+.del-btn { background:none; border:none; cursor:pointer; font-size:13px; color:var(--muted); opacity:0; transition:opacity .15s; padding:2px; flex-shrink:0; }
 .note-row:hover .del-btn { opacity:1; }
-.cat-footer {
-  display:flex; gap:6px; padding:8px 15px;
-  border-top:1px solid var(--border); flex-wrap:wrap;
-}
-.foot-btn {
-  background:var(--bg); border:1px solid var(--border);
-  color:var(--muted); font-family:'Plus Jakarta Sans',sans-serif;
-  font-size:11px; font-weight:600; padding:5px 12px;
-  border-radius:8px; cursor:pointer; transition:all .15s;
-}
+.cat-footer { display:flex; gap:6px; padding:8px 15px; border-top:1px solid var(--border); flex-wrap:wrap; }
+.foot-btn { background:var(--bg); border:1px solid var(--border); color:var(--muted); font-family:'Plus Jakarta Sans',sans-serif; font-size:11px; font-weight:600; padding:5px 12px; border-radius:8px; cursor:pointer; transition:all .15s; }
 .foot-btn:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-light); }
 .foot-btn.keep:hover { border-color:#f9a825; color:#8a6100; background:#fffde7; }
 .foot-btn.danger:hover { border-color:#e74c3c; color:#e74c3c; background:#fff5f5; }
 .empty-note { padding:14px 15px; font-size:12px; color:var(--muted); font-style:italic; text-align:center; }
 
-/* API warn */
-.api-warn {
-  margin:0 20px 10px;
-  background:#fff8e6; border:1px solid #f4c842;
-  border-radius:10px; padding:9px 13px;
-  font-size:12px; color:#8a6b00; display:none;
-}
-
-/* Overlays */
-.overlay {
-  display:none; position:fixed; inset:0;
-  background:rgba(26,24,20,.55); z-index:50;
-  backdrop-filter:blur(6px);
-  align-items:flex-end; justify-content:center;
-}
+/* Modals */
+.overlay { display:none; position:fixed; inset:0; background:rgba(26,24,20,.55); z-index:50; backdrop-filter:blur(6px); align-items:flex-end; justify-content:center; }
 .overlay.show { display:flex; }
-.modal {
-  background:var(--card); border-radius:24px 24px 0 0;
-  padding:28px 20px 36px; width:100%; max-width:480px;
-  animation:mu .28s cubic-bezier(0.34,1.56,0.64,1);
-}
+.modal { background:var(--card); border-radius:24px 24px 0 0; padding:28px 20px 36px; width:100%; max-width:480px; animation:mu .28s cubic-bezier(.34,1.56,.64,1); }
 @keyframes mu { from{transform:translateY(50px);opacity:0} to{transform:translateY(0);opacity:1} }
 .modal-title { font-family:'Instrument Serif',serif; font-size:22px; margin-bottom:18px; }
-.modal input {
-  width:100%; background:var(--bg); border:1.5px solid var(--border);
-  border-radius:12px; padding:13px 15px;
-  font-family:'Plus Jakarta Sans',sans-serif; font-size:14px;
-  color:var(--text); outline:none; margin-bottom:14px; transition:border-color .2s;
-}
+.modal input { width:100%; background:var(--bg); border:1.5px solid var(--border); border-radius:12px; padding:13px 15px; font-family:'Plus Jakarta Sans',sans-serif; font-size:14px; color:var(--text); outline:none; margin-bottom:14px; transition:border-color .2s; }
 .modal input:focus { border-color:var(--accent); }
 .swatch-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
-.swatch {
-  width:30px; height:30px; border-radius:50%; cursor:pointer;
-  border:3px solid transparent; transition:all .15s;
-}
-.swatch:hover, .swatch.sel { border-color:var(--text); transform:scale(1.1); }
+.swatch { width:30px; height:30px; border-radius:50%; cursor:pointer; border:3px solid transparent; transition:all .15s; }
+.swatch:hover,.swatch.sel { border-color:var(--text); transform:scale(1.1); }
 .modal-btns { display:flex; gap:10px; }
-.btn-green {
-  flex:1; background:var(--accent); color:white; border:none;
-  border-radius:12px; padding:14px;
-  font-family:'Plus Jakarta Sans',sans-serif; font-weight:700; font-size:14px;
-  cursor:pointer; transition:opacity .2s;
-}
+.btn-green { flex:1; background:var(--accent); color:white; border:none; border-radius:12px; padding:14px; font-family:'Plus Jakarta Sans',sans-serif; font-weight:700; font-size:14px; cursor:pointer; transition:opacity .2s; }
 .btn-green:hover { opacity:.85; }
-.btn-cancel {
-  background:var(--bg); border:1.5px solid var(--border);
-  border-radius:12px; padding:14px 18px;
-  font-family:'Plus Jakarta Sans',sans-serif; font-size:14px;
-  cursor:pointer; color:var(--muted);
-}
+.btn-cancel { background:var(--bg); border:1.5px solid var(--border); border-radius:12px; padding:14px 18px; font-family:'Plus Jakarta Sans',sans-serif; font-size:14px; cursor:pointer; color:var(--muted); }
 
 /* Keep modal */
-.keep-modal {
-  background:var(--card); border-radius:24px 24px 0 0;
-  padding:28px 20px 36px; width:100%; max-width:480px;
-  animation:mu .28s cubic-bezier(0.34,1.56,0.64,1);
-}
+.keep-modal { background:var(--card); border-radius:24px 24px 0 0; padding:28px 20px 36px; width:100%; max-width:480px; animation:mu .28s cubic-bezier(.34,1.56,.64,1); }
 .keep-logo { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
-.keep-icon {
-  width:38px; height:38px; background:#fbbc04;
-  border-radius:8px; display:flex; align-items:center;
-  justify-content:center; font-size:20px;
-}
+.keep-icon { width:38px; height:38px; background:#fbbc04; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:20px; }
 .keep-logo h3 { font-family:'Instrument Serif',serif; font-size:20px; }
 .keep-sub { font-size:13px; color:var(--muted); margin-bottom:14px; line-height:1.6; }
-.keep-preview {
-  background:#fffde7; border:1.5px solid #f4c842;
-  border-radius:12px; padding:14px; margin-bottom:14px;
-  max-height:200px; overflow-y:auto;
-}
+.keep-preview { background:#fffde7; border:1.5px solid #f4c842; border-radius:12px; padding:14px; margin-bottom:14px; max-height:200px; overflow-y:auto; }
 .kp-title { font-weight:700; font-size:13px; color:#8a6b00; margin-bottom:6px; }
 .kp-body { font-size:13px; line-height:1.7; white-space:pre-wrap; }
 .keep-btns { display:flex; gap:8px; margin-bottom:14px; }
-.keep-open {
-  flex:1; background:#fbbc04; color:#1a1814; border:none;
-  border-radius:12px; padding:13px;
-  font-family:'Plus Jakarta Sans',sans-serif; font-weight:700; font-size:13px;
-  cursor:pointer; text-decoration:none; text-align:center;
-  display:flex; align-items:center; justify-content:center; gap:6px;
-  transition:opacity .2s;
-}
+.keep-open { flex:1; background:#fbbc04; color:#1a1814; border:none; border-radius:12px; padding:13px; font-family:'Plus Jakarta Sans',sans-serif; font-weight:700; font-size:13px; cursor:pointer; text-decoration:none; text-align:center; display:flex; align-items:center; justify-content:center; gap:6px; transition:opacity .2s; }
 .keep-open:hover { opacity:.85; }
-.keep-copy {
-  background:var(--bg); border:1.5px solid var(--border);
-  border-radius:12px; padding:13px 16px;
-  font-family:'Plus Jakarta Sans',sans-serif; font-size:13px;
-  font-weight:600; cursor:pointer; color:var(--muted); transition:all .15s;
-}
-.keep-copy:hover { border-color:var(--accent); color:var(--accent); }
+.keep-copy { background:var(--bg); border:1.5px solid var(--border); border-radius:12px; padding:13px 16px; font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; font-weight:600; cursor:pointer; color:var(--muted); }
 .keep-hint { font-size:11px; color:var(--muted); line-height:1.6; text-align:center; }
 
-/* Toast */
-.toast {
-  position:fixed; bottom:28px; left:50%;
-  transform:translateX(-50%) translateY(16px);
-  background:var(--text); color:white;
-  font-weight:600; font-size:13px;
-  padding:10px 20px; border-radius:30px;
-  opacity:0; transition:all .25s ease;
-  pointer-events:none; z-index:99; white-space:nowrap;
-}
+.toast { position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(16px); background:var(--text); color:white; font-weight:600; font-size:13px; padding:10px 20px; border-radius:30px; opacity:0; transition:all .25s ease; pointer-events:none; z-index:99; white-space:nowrap; }
 .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 </style>
 </head>
@@ -308,33 +153,34 @@ header {
       </svg>
     </button>
   </div>
+  <div class="waveform" id="waveform">
+    <div class="wave-bar" style="height:8px"></div>
+    <div class="wave-bar" style="height:14px"></div>
+    <div class="wave-bar" style="height:20px"></div>
+    <div class="wave-bar" style="height:14px"></div>
+    <div class="wave-bar" style="height:8px"></div>
+  </div>
+  <div class="rec-timer" id="recTimer">0:00</div>
   <div class="record-state" id="recState">Tap to speak</div>
 </div>
 
-<div class="api-warn" id="apiWarn">⚠️ Speech recognition needs Chrome or Edge on Android. Safari not supported.</div>
+<div class="warn" id="warnBox"></div>
 
 <div class="tx-wrap" id="txWrap">
-  <div class="tx-inner" id="txInner"><span class="ph">Your words will appear here…</span></div>
+  <div class="tx-inner" id="txInner"><span class="ph">Your words will appear here\u2026</span></div>
 </div>
 
 <div class="proc" id="proc">
   <div class="dots"><span></span><span></span><span></span></div>
-  Sorting with AI…
+  <span id="procLabel">Transcribing\u2026</span>
 </div>
 
 <div class="sec-head">
   <span class="sec-label">Your Notes</span>
-  <button class="add-cat" onclick="openAddModal()">＋ New category</button>
+  <button class="add-cat" onclick="openAddModal()">\uff0b New category</button>
 </div>
 
 <div class="cats" id="catsEl"></div>
-
-<!-- Debug panel -->
-<div style="margin:20px;background:#1a1814;border-radius:12px;padding:12px;">
-  <div style="color:#e8ff47;font-size:11px;font-weight:700;margin-bottom:8px;font-family:monospace;">🔍 DEBUG — share with Claude if mic fails</div>
-  <div id="debugLog" style="font-family:monospace;font-size:11px;color:#7aff7a;max-height:160px;overflow-y:auto;line-height:1.7;"></div>
-  <button onclick="document.getElementById('debugLog').innerHTML=''" style="margin-top:8px;background:none;border:1px solid #444;color:#888;font-size:11px;padding:3px 10px;border-radius:6px;cursor:pointer;">Clear log</button>
-</div>
 
 </div><!-- .app -->
 
@@ -342,7 +188,7 @@ header {
 <div class="overlay" id="addOverlay" onclick="bgClose(event,'addOverlay')">
   <div class="modal">
     <div class="modal-title">New Category</div>
-    <input type="text" id="newCatName" placeholder="e.g. Work, Health, Finance…" maxlength="30"/>
+    <input type="text" id="newCatName" placeholder="e.g. Work, Health, Finance\u2026" maxlength="30"/>
     <div class="swatch-row" id="swatchRow"></div>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeOverlay('addOverlay')">Cancel</button>
@@ -355,19 +201,19 @@ header {
 <div class="overlay" id="keepOverlay" onclick="bgClose(event,'keepOverlay')">
   <div class="keep-modal">
     <div class="keep-logo">
-      <div class="keep-icon">📒</div>
+      <div class="keep-icon">\ud83d\udcd2</div>
       <h3>Export to Google Keep</h3>
     </div>
-    <p class="keep-sub">Copy your notes below, then paste them into a new Google Keep note.</p>
+    <p class="keep-sub">Copy your notes below, then paste into a new Google Keep note.</p>
     <div class="keep-preview">
       <div class="kp-title" id="kpTitle"></div>
       <div class="kp-body" id="kpBody"></div>
     </div>
     <div class="keep-btns">
-      <a class="keep-open" href="https://keep.google.com" target="_blank" rel="noopener">📒 Open Google Keep</a>
-      <button class="keep-copy" onclick="keepCopy()">📋 Copy</button>
+      <a class="keep-open" href="https://keep.google.com" target="_blank" rel="noopener">\ud83d\udcd2 Open Google Keep</a>
+      <button class="keep-copy" onclick="keepCopy()">\ud83d\udccb Copy</button>
     </div>
-    <div class="keep-hint">In Keep: tap the ＋ button → paste → done!</div>
+    <div class="keep-hint">In Keep: tap \uff0b \u2192 paste \u2192 save!</div>
   </div>
 </div>
 
@@ -377,280 +223,250 @@ header {
 const COLORS = ['#2d7d46','#d4720a','#7b3fbe','#1a6fa8','#c0392b','#16a085','#8e44ad','#2980b9','#d35400','#7f8c8d'];
 
 let cats = [
-  { id:'grocery',  name:'🛒 Groceries',  color:'#2d7d46', notes:[], open:false },
-  { id:'kids',     name:'👨‍👩‍👧 Kids',      color:'#d4720a', notes:[], open:false },
-  { id:'shopping', name:'🛍️ Shopping',   color:'#7b3fbe', notes:[], open:false },
-  { id:'memo',     name:'📝 Memo',        color:'#1a6fa8', notes:[], open:false },
-  { id:'parents',  name:'👴 Parents',     color:'#c0392b', notes:[], open:false },
-  { id:'other',    name:'💡 Other',       color:'#7f8c8d', notes:[], open:false },
+  {id:'grocery', name:'\ud83d\uded2 Groceries', color:'#2d7d46', notes:[], open:false},
+  {id:'kids',    name:'\ud83d\udc68\u200d\ud83d\udc69\u200d\ud83d\udc67 Kids',     color:'#d4720a', notes:[], open:false},
+  {id:'shopping',name:'\ud83d\udecd\ufe0f Shopping',  color:'#7b3fbe', notes:[], open:false},
+  {id:'memo',    name:'\ud83d\udcdd Memo',       color:'#1a6fa8', notes:[], open:false},
+  {id:'parents', name:'\ud83d\udc74 Parents',    color:'#c0392b', notes:[], open:false},
+  {id:'other',   name:'\ud83d\udca1 Other',      color:'#7f8c8d', notes:[], open:false},
 ];
 
 let selColor = COLORS[0];
-let recognition = null;
+let mediaRecorder = null;
+let audioChunks = [];
 let isRec = false;
-let finalText = '';
+let timerInterval = null;
+let timerSecs = 0;
 let keepCopyText = '';
 
-/* ── Render ── */
-function render() {
+/* \u2500\u2500 Render \u2500\u2500 */
+function render(){
   const el = document.getElementById('catsEl');
-  el.innerHTML = '';
-  let total = 0;
+  el.innerHTML = ''; let total = 0;
   cats.forEach(cat => {
     total += cat.notes.length;
     const card = document.createElement('div');
     card.className = 'cat-card' + (cat.open ? ' open' : '');
     card.id = 'cc-' + cat.id;
-
     const notesH = cat.notes.length === 0
-      ? `<div class="empty-note">No notes yet — say something!</div>`
-      : cat.notes.map((n,i) => `
-          <div class="note-row">
-            <div class="note-time">${n.t}</div>
-            <div class="note-txt">${esc(n.text)}</div>
-            <button class="del-btn" onclick="delNote('${cat.id}',${i})">✕</button>
-          </div>`).join('');
-
-    const footH = cat.notes.length > 0 ? `
-      <div class="cat-footer">
-        <button class="foot-btn keep" onclick="openKeep('${cat.id}')">📒 Send to Keep</button>
-        <button class="foot-btn" onclick="copyAll('${cat.id}')">📋 Copy all</button>
-        <button class="foot-btn danger" onclick="clearCat('${cat.id}')">🗑 Clear</button>
-      </div>` : '';
-
-    card.innerHTML = `
-      <div class="cat-head" onclick="toggleCat('${cat.id}')">
-        <div class="cat-stripe" style="background:${cat.color}"></div>
-        <div class="cat-name">${esc(cat.name)}</div>
-        <div class="cat-cnt">${cat.notes.length}</div>
-        <span class="chevron">▼</span>
-      </div>
-      <div class="cat-body">${notesH}${footH}</div>`;
+      ? `<div class="empty-note">No notes yet \u2014 say something!</div>`
+      : cat.notes.map((n,i) => `<div class="note-row"><div class="note-time">${n.t}</div><div class="note-txt">${esc(n.text)}</div><button class="del-btn" onclick="delNote('${cat.id}',${i})">\u2715</button></div>`).join('');
+    const footH = cat.notes.length > 0 ? `<div class="cat-footer"><button class="foot-btn keep" onclick="openKeep('${cat.id}')">\ud83d\udcd2 Keep</button><button class="foot-btn" onclick="copyAll('${cat.id}')">\ud83d\udccb Copy</button><button class="foot-btn danger" onclick="clearCat('${cat.id}')">\ud83d\uddd1 Clear</button></div>` : '';
+    card.innerHTML = `<div class="cat-head" onclick="toggleCat('${cat.id}')"><div class="cat-stripe" style="background:${cat.color}"></div><div class="cat-name">${esc(cat.name)}</div><div class="cat-cnt">${cat.notes.length}</div><span class="chevron">\u25bc</span></div><div class="cat-body">${notesH}${footH}</div>`;
     el.appendChild(card);
   });
   document.getElementById('totalPill').textContent = total + (total===1?' note':' notes');
 }
 
-function toggleCat(id) { const c=cats.find(x=>x.id===id); if(c) c.open=!c.open; render(); }
-function delNote(id,i) { const c=cats.find(x=>x.id===id); if(c){c.notes.splice(i,1); render();} }
-function clearCat(id) { const c=cats.find(x=>x.id===id); if(c){c.notes=[];render();showToast('Cleared');} }
-function copyAll(id) {
+function toggleCat(id){ const c=cats.find(x=>x.id===id); if(c)c.open=!c.open; render(); }
+function delNote(id,i){ const c=cats.find(x=>x.id===id); if(c){c.notes.splice(i,1); render();} }
+function clearCat(id){ const c=cats.find(x=>x.id===id); if(c){c.notes=[];render();showToast('Cleared');} }
+function copyAll(id){
   const c=cats.find(x=>x.id===id);
   if(!c||!c.notes.length) return;
-  navigator.clipboard.writeText(c.name+'\n'+c.notes.map(n=>'• '+n.text).join('\n'))
-    .then(()=>showToast('Copied!'));
+  navigator.clipboard.writeText(c.name+'\n'+c.notes.map(n=>'\u2022 '+n.text).join('\n')).then(()=>showToast('Copied!'));
 }
 
-/* ── Google Keep ── */
-function openKeep(id) {
-  const c=cats.find(x=>x.id===id);
-  if(!c||!c.notes.length) return;
-  const body = c.notes.map(n=>'• '+n.text).join('\n');
-  document.getElementById('kpTitle').textContent = c.name;
-  document.getElementById('kpBody').textContent = body;
-  keepCopyText = c.name + '\n' + body;
+function openKeep(id){
+  const c=cats.find(x=>x.id===id); if(!c||!c.notes.length) return;
+  const body=c.notes.map(n=>'\u2022 '+n.text).join('\n');
+  document.getElementById('kpTitle').textContent=c.name;
+  document.getElementById('kpBody').textContent=body;
+  keepCopyText=c.name+'\n'+body;
   openOverlay('keepOverlay');
 }
-function keepCopy() {
-  navigator.clipboard.writeText(keepCopyText)
-    .then(()=>showToast('Copied! Paste into Google Keep 📒'));
-}
+function keepCopy(){ navigator.clipboard.writeText(keepCopyText).then(()=>showToast('Copied! Paste into Keep \ud83d\udcd2')); }
 
-/* ── Debug log ── */
-function dbg(msg){
-  const el = document.getElementById('debugLog');
-  if(!el) return;
-  const line = document.createElement('div');
-  line.textContent = new Date().toLocaleTimeString() + ' — ' + msg;
-  el.appendChild(line);
-  el.scrollTop = el.scrollHeight;
-}
-
-/* ── Speech (Android Chrome compatible) ── */
+/* \u2500\u2500 Recording with MediaRecorder \u2500\u2500 */
 function toggleRec(){ isRec ? stopRec() : startRec(); }
 
-let activeStream = null;
+async function startRec(){
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-function startRec(){
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR){
-    document.getElementById('apiWarn').textContent = '⚠️ Speech Recognition not supported.';
-    document.getElementById('apiWarn').style.display = 'block';
-    dbg('ERROR: SpeechRecognition not available');
-    return;
-  }
+    // Pick best supported format
+    const mimeType = ['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/ogg','audio/mp4']
+      .find(t => MediaRecorder.isTypeSupported(t)) || '';
 
-  dbg('Requesting mic via getUserMedia...');
-  navigator.mediaDevices.getUserMedia({ audio: true })
-    .then(stream => {
-      dbg('getUserMedia granted — releasing stream, then starting SR...');
-      // Release FIRST, then start SR after a short delay
-      // This grants permission without conflicting for the mic hardware
+    mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+    audioChunks = [];
+
+    mediaRecorder.ondataavailable = e => {
+      if(e.data && e.data.size > 0) audioChunks.push(e.data);
+    };
+
+    mediaRecorder.onstop = async () => {
       stream.getTracks().forEach(t => t.stop());
-      activeStream = null;
-      setTimeout(() => beginRecognition(SR), 300);
-    })
-    .catch(err => {
-      dbg('getUserMedia DENIED: ' + err.name);
-      const warn = document.getElementById('apiWarn');
-      warn.textContent = '⚠️ Mic blocked — tap 🔒 in address bar → allow Microphone → refresh.';
-      warn.style.display = 'block';
-    });
-}
+      const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+      await processAudio(blob);
+    };
 
-function beginRecognition(SR){
-  recognition = new SR();
-  recognition.continuous = false;
-  recognition.interimResults = true;
-  recognition.lang = 'en-US';
+    mediaRecorder.start(250); // collect chunks every 250ms
+    isRec = true;
 
-  finalText = '';
-  isRec = true;
+    // UI
+    document.getElementById('recordBtn').classList.add('on');
+    document.getElementById('ringWrap').classList.add('recording');
+    document.getElementById('recState').textContent = 'Tap to stop';
+    document.getElementById('recState').className = 'record-state live';
+    document.getElementById('waveform').classList.add('show');
+    document.getElementById('recTimer').classList.add('show');
+    document.getElementById('txInner').innerHTML = '<span class="ph">\ud83c\udf99\ufe0f Recording\u2026 tap to stop</span>';
+    document.getElementById('txWrap').className = 'tx-wrap listening';
+    document.getElementById('warnBox').style.display = 'none';
 
-  document.getElementById('txInner').innerHTML = '<span class="ph">🎙️ Listening… speak now</span>';
-  document.getElementById('txWrap').className = 'tx-wrap listening';
-  document.getElementById('recordBtn').classList.add('on');
-  document.getElementById('ringWrap').classList.add('recording');
-  document.getElementById('recState').textContent = 'Tap to stop';
-  document.getElementById('recState').className = 'record-state live';
+    // Timer
+    timerSecs = 0;
+    timerInterval = setInterval(() => {
+      timerSecs++;
+      const m = Math.floor(timerSecs/60);
+      const s = String(timerSecs%60).padStart(2,'0');
+      document.getElementById('recTimer').textContent = m+':'+s;
+      // Auto-stop at 60 seconds
+      if(timerSecs >= 60) stopRec();
+    }, 1000);
 
-  recognition.onstart = () => { dbg('onstart — mic active'); };
-  recognition.onaudiostart = () => { dbg('onaudiostart — capturing audio'); };
-  recognition.onsoundstart = () => { dbg('onsoundstart — sound detected!'); };
-  recognition.onspeechstart = () => { dbg('onspeechstart — speech detected!'); };
-
-  recognition.onresult = e => {
-    dbg('onresult — ' + e.results.length + ' result(s)');
-    let interim = '', final = '';
-    for(let i = 0; i < e.results.length; i++){
-      if(e.results[i].isFinal){
-        final += e.results[i][0].transcript + ' ';
-        dbg('✅ Final: ' + e.results[i][0].transcript);
-      } else {
-        interim += e.results[i][0].transcript;
-        dbg('~ Interim: ' + e.results[i][0].transcript);
-      }
-    }
-    finalText = final;
-    const show = (final + interim).trim();
-    if(show) document.getElementById('txInner').textContent = show;
-  };
-
-  recognition.onnomatch = () => { dbg('onnomatch — no words matched'); };
-
-  recognition.onerror = e => {
-    dbg('ERROR: ' + e.error);
-    if(e.error === 'aborted') return; // ignore aborted — onend will handle restart
-    const warn = document.getElementById('apiWarn');
-    if(e.error === 'not-allowed') warn.textContent = '⚠️ Mic blocked — allow microphone in site settings.';
-    else if(e.error === 'network') warn.textContent = '⚠️ Network error — needs internet.';
-    else if(e.error === 'no-speech') warn.textContent = '⚠️ No speech heard — try speaking louder.';
-    else warn.textContent = '⚠️ Error: ' + e.error;
+  } catch(err) {
+    const warn = document.getElementById('warnBox');
+    warn.textContent = '\u26a0\ufe0f Mic access denied \u2014 tap the \ud83d\udd12 lock in Chrome address bar \u2192 allow Microphone \u2192 refresh.';
     warn.style.display = 'block';
-    stopRec();
-  };
-
-  recognition.onend = () => {
-    dbg('onend — finalText: "' + finalText.trim() + '"');
-    if(isRec){
-      if(finalText.trim()){
-        stopRec();
-      } else {
-        dbg('Nothing captured — restarting...');
-        setTimeout(() => {
-          try{ recognition.start(); dbg('Restarted'); }
-          catch(e){ dbg('Restart failed: '+e); stopRec(); }
-        }, 100);
-      }
-    }
-  };
-
-  try{
-    recognition.start();
-    dbg('recognition.start() called');
-  } catch(e){
-    dbg('Start exception: ' + e);
-    showToast('Could not start — try again');
-    isRec = false;
   }
 }
 
 function stopRec(){
+  if(!mediaRecorder || mediaRecorder.state === 'inactive') return;
+  clearInterval(timerInterval);
+  mediaRecorder.stop();
   isRec = false;
-  try{ recognition && recognition.stop(); }catch(e){}
-  // Now release the mic stream
-  if(activeStream){ activeStream.getTracks().forEach(t => t.stop()); activeStream = null; }
+
   document.getElementById('recordBtn').classList.remove('on');
   document.getElementById('ringWrap').classList.remove('recording');
   document.getElementById('recState').textContent = 'Tap to speak';
   document.getElementById('recState').className = 'record-state';
-  document.getElementById('apiWarn').style.display = 'none';
-
-  const text = finalText.trim() || document.getElementById('txInner').textContent.trim();
-  if(text && !text.includes('Listening') && !text.includes('speak now')){
-    document.getElementById('txWrap').className = 'tx-wrap done';
-    categorize(text);
-  } else {
-    document.getElementById('txInner').innerHTML = '<span class="ph">Your words will appear here…</span>';
-    document.getElementById('txWrap').className = 'tx-wrap';
-  }
+  document.getElementById('waveform').classList.remove('show');
+  document.getElementById('recTimer').classList.remove('show');
 }
 
-/* ── Categorize ── */
-async function categorize(text){
+/* \u2500\u2500 Send audio to Claude for transcription + categorization \u2500\u2500 */
+async function processAudio(blob){
+  document.getElementById('procLabel').textContent = 'Transcribing\u2026';
   document.getElementById('proc').classList.add('show');
-  const catList=cats.map(c=>`"${c.id}": ${c.name}`).join(', ');
-  const prompt=`You are a smart personal note categorizer. Analyze this spoken note and assign each part to the best matching category. Split into multiple entries if different things belong to different categories.
+  document.getElementById('txInner').innerHTML = '<span class="ph">Processing your voice\u2026</span>';
 
-Categories: ${catList}
+  try {
+    // Convert blob to base64
+    const base64 = await blobToBase64(blob);
+    const base64Data = base64.split(',')[1];
+    const mimeType = blob.type || 'audio/webm';
 
-Spoken note: "${text}"
+    const catList = cats.map(c => `"${c.id}": ${c.name}`).join(', ');
 
-Respond ONLY with a JSON array (no markdown, no explanation):
-[{"categoryId":"grocery","note":"clean concise note"}]
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: `You will receive an audio recording. Please:
+1. Transcribe exactly what was said
+2. Categorize the content into the appropriate categories
 
-Rules:
-- Use exact categoryId values from the list
-- Remove filler words (um, uh, like, so, kind of)
+Available categories: ${catList}
+
+Respond ONLY with a JSON object (no markdown):
+{
+  "transcript": "what was said",
+  "items": [{"categoryId": "grocery", "note": "clean concise note"}]
+}
+
+Rules for items:
+- Use exact categoryId values
+- Remove filler words (um, uh, like)
 - Keep notes concise and actionable
-- Split if multiple categories are mentioned
-- Use "${cats[cats.length-1].id}" if nothing else fits`;
-
-  try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:1000,
-        messages:[{role:'user',content:prompt}]
+- Split into multiple items if multiple categories mentioned
+- Use "other" if nothing else fits`
+            },
+            {
+              type: 'document',
+              source: {
+                type: 'base64',
+                media_type: mimeType,
+                data: base64Data
+              }
+            }
+          ]
+        }]
       })
     });
-    const data=await res.json();
-    const raw=(data.content||[]).map(b=>b.text||'').join('');
-    const items=JSON.parse(raw.replace(/```json|```/g,'').trim());
-    const t=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-    items.forEach(item=>{
-      const c=cats.find(x=>x.id===item.categoryId);
-      if(c){c.notes.unshift({text:item.note,t});c.open=true;}
+
+    const data = await res.json();
+
+    // Check for API error
+    if(data.error){
+      throw new Error(data.error.message || 'API error');
+    }
+
+    const raw = (data.content || []).map(b => b.text || '').join('');
+    const parsed = JSON.parse(raw.replace(/```json|```/g,'').trim());
+
+    // Show transcript
+    if(parsed.transcript){
+      document.getElementById('txInner').textContent = parsed.transcript;
+      document.getElementById('txWrap').className = 'tx-wrap done';
+    }
+
+    // Add notes
+    document.getElementById('procLabel').textContent = 'Categorizing\u2026';
+    const t = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    (parsed.items || []).forEach(item => {
+      const c = cats.find(x => x.id === item.categoryId);
+      if(c){ c.notes.unshift({text: item.note, t}); c.open = true; }
     });
+
     render();
-    items.forEach(item=>{
-      const el=document.getElementById('cc-'+item.categoryId);
-      if(el){el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),900);}
+
+    (parsed.items || []).forEach(item => {
+      const el = document.getElementById('cc-'+item.categoryId);
+      if(el){ el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),900); }
     });
-    const name=cats.find(c=>c.id===items[0]?.categoryId)?.name||'notes';
-    showToast(items.length>1?`Sorted into ${items.length} categories ✓`:`Added to ${name} ✓`);
-  }catch(err){
-    const t=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-    const fb=cats[cats.length-1];
-    fb.notes.unshift({text,t}); fb.open=true; render();
-    showToast('Added to '+fb.name);
+
+    const count = (parsed.items||[]).length;
+    const name = cats.find(c=>c.id===parsed.items?.[0]?.categoryId)?.name||'notes';
+    showToast(count > 1 ? `Sorted into ${count} categories \u2713` : `Added to ${name} \u2713`);
+
+  } catch(err) {
+    console.error(err);
+    // Show error with helpful message
+    const warn = document.getElementById('warnBox');
+
+    if(err.message && err.message.includes('audio')){
+      warn.textContent = '\u26a0\ufe0f Audio format not supported. Try speaking for at least 2 seconds.';
+    } else {
+      warn.textContent = '\u26a0\ufe0f Could not process audio: ' + (err.message || 'unknown error') + '. Try again.';
+    }
+    warn.style.display = 'block';
+    document.getElementById('txInner').innerHTML = '<span class="ph">Your words will appear here\u2026</span>';
+    document.getElementById('txWrap').className = 'tx-wrap';
   }
+
   document.getElementById('proc').classList.remove('show');
 }
 
-/* ── Add Category ── */
+function blobToBase64(blob){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+/* \u2500\u2500 Add Category \u2500\u2500 */
 function openAddModal(){
   document.getElementById('newCatName').value='';
   selColor=COLORS[0]; renderSwatches();
@@ -658,36 +474,4 @@ function openAddModal(){
   setTimeout(()=>document.getElementById('newCatName').focus(),120);
 }
 function renderSwatches(){
-  const row=document.getElementById('swatchRow'); row.innerHTML='';
-  COLORS.forEach(c=>{
-    const s=document.createElement('div');
-    s.className='swatch'+(c===selColor?' sel':''); s.style.background=c;
-    s.onclick=()=>{selColor=c;renderSwatches();};
-    row.appendChild(s);
-  });
-}
-function submitCat(){
-  const name=document.getElementById('newCatName').value.trim();
-  if(!name){showToast('Enter a name');return;}
-  cats.push({id:'c'+Date.now(),name,color:selColor,notes:[],open:false});
-  closeOverlay('addOverlay'); render(); showToast('Category added!');
-}
-
-/* ── Overlay helpers ── */
-function openOverlay(id){document.getElementById(id).classList.add('show');}
-function closeOverlay(id){document.getElementById(id).classList.remove('show');}
-function bgClose(e,id){if(e.target.classList.contains('overlay'))closeOverlay(id);}
-
-/* ── Toast ── */
-function showToast(msg){
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('show');
-  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2500);
-}
-
-function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-
-render();
-</script>
-</body>
-</html>
+  const row=
