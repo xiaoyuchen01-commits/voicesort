@@ -329,6 +329,13 @@ header {
 
 <div class="cats" id="catsEl"></div>
 
+<!-- Debug panel -->
+<div style="margin:20px;background:#1a1814;border-radius:12px;padding:12px;">
+  <div style="color:#e8ff47;font-size:11px;font-weight:700;margin-bottom:8px;font-family:monospace;">🔍 DEBUG — share with Claude if mic fails</div>
+  <div id="debugLog" style="font-family:monospace;font-size:11px;color:#7aff7a;max-height:160px;overflow-y:auto;line-height:1.7;"></div>
+  <button onclick="document.getElementById('debugLog').innerHTML=''" style="margin-top:8px;background:none;border:1px solid #444;color:#888;font-size:11px;padding:3px 10px;border-radius:6px;cursor:pointer;">Clear log</button>
+</div>
+
 </div><!-- .app -->
 
 <!-- Add Category Modal -->
@@ -449,76 +456,105 @@ function keepCopy() {
     .then(()=>showToast('Copied! Paste into Google Keep 📒'));
 }
 
+/* ── Debug log ── */
+function dbg(msg){
+  const el = document.getElementById('debugLog');
+  if(!el) return;
+  const line = document.createElement('div');
+  line.textContent = new Date().toLocaleTimeString() + ' — ' + msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
 /* ── Speech (Android Chrome compatible) ── */
 function toggleRec(){ isRec ? stopRec() : startRec(); }
 
 function startRec(){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR){ document.getElementById('apiWarn').style.display='block'; return; }
+  if(!SR){
+    document.getElementById('apiWarn').textContent = '⚠️ Speech Recognition not supported in this browser.';
+    document.getElementById('apiWarn').style.display = 'block';
+    dbg('ERROR: SpeechRecognition not available');
+    return;
+  }
 
-  // Always create a fresh instance — Android Chrome requires this
+  dbg('Starting recognition...');
   recognition = new SR();
-  recognition.continuous = false;      // false works more reliably on Android
+  recognition.continuous = false;
   recognition.interimResults = true;
   recognition.lang = 'en-US';
-  recognition.maxAlternatives = 1;
 
   finalText = '';
   isRec = true;
 
-  document.getElementById('txInner').innerHTML = '<span class="ph">Listening… speak now</span>';
+  document.getElementById('txInner').innerHTML = '<span class="ph">🎙️ Listening… speak now</span>';
   document.getElementById('txWrap').className = 'tx-wrap listening';
   document.getElementById('recordBtn').classList.add('on');
   document.getElementById('ringWrap').classList.add('recording');
   document.getElementById('recState').textContent = 'Tap to stop';
   document.getElementById('recState').className = 'record-state live';
 
-  recognition.onstart = () => {
-    document.getElementById('txInner').innerHTML = '<span class="ph">🎙️ Listening… speak now</span>';
-  };
+  recognition.onstart = () => { dbg('onstart fired — mic is active'); };
+
+  recognition.onaudiostart = () => { dbg('onaudiostart — audio capturing begun'); };
+
+  recognition.onsoundstart = () => { dbg('onsoundstart — sound detected!'); };
+
+  recognition.onspeechstart = () => { dbg('onspeechstart — speech detected!'); };
 
   recognition.onresult = e => {
+    dbg('onresult fired — results: ' + e.results.length);
     let interim = '', final = '';
     for(let i = 0; i < e.results.length; i++){
-      if(e.results[i].isFinal) final += e.results[i][0].transcript + ' ';
-      else interim += e.results[i][0].transcript;
+      if(e.results[i].isFinal){
+        final += e.results[i][0].transcript + ' ';
+        dbg('Final: ' + e.results[i][0].transcript);
+      } else {
+        interim += e.results[i][0].transcript;
+        dbg('Interim: ' + e.results[i][0].transcript);
+      }
     }
     finalText = final;
     const show = (final + interim).trim();
-    if(show){
-      document.getElementById('txInner').textContent = show;
-    }
+    if(show) document.getElementById('txInner').textContent = show;
   };
 
+  recognition.onnomatch = () => { dbg('onnomatch — no speech matched'); };
+
   recognition.onerror = e => {
-    console.log('SR error:', e.error);
+    dbg('ERROR: ' + e.error + ' — ' + (e.message||''));
+    const warn = document.getElementById('apiWarn');
     if(e.error === 'not-allowed'){
-      document.getElementById('apiWarn').textContent = '⚠️ Microphone permission denied. Please allow mic access in Chrome settings.';
-      document.getElementById('apiWarn').style.display = 'block';
+      warn.textContent = '⚠️ Mic blocked — tap the 🔒 lock icon in Chrome address bar and allow microphone.';
     } else if(e.error === 'network'){
-      document.getElementById('apiWarn').textContent = '⚠️ Network error — speech recognition needs internet.';
-      document.getElementById('apiWarn').style.display = 'block';
+      warn.textContent = '⚠️ Network error — speech recognition needs internet connection.';
+    } else if(e.error === 'no-speech'){
+      warn.textContent = '⚠️ No speech detected — try speaking louder or closer to the mic.';
+    } else {
+      warn.textContent = '⚠️ Error: ' + e.error;
     }
+    warn.style.display = 'block';
     stopRec();
   };
 
   recognition.onend = () => {
-    // On Android, recognition stops after silence — auto-restart if still recording
+    dbg('onend — finalText: "' + finalText.trim() + '"');
     if(isRec){
-      const current = document.getElementById('txInner').textContent.trim();
-      if(!current || current.includes('Listening')){ 
-        // nothing captured yet, restart
-        try{ recognition.start(); }catch(e){ stopRec(); }
-      } else {
-        // got something, stop
+      if(finalText.trim()){
         stopRec();
+      } else {
+        // restart if nothing captured
+        dbg('Restarting...');
+        try{ recognition.start(); }catch(e){ dbg('Restart failed: '+e); stopRec(); }
       }
     }
   };
 
   try{
     recognition.start();
+    dbg('recognition.start() called');
   } catch(e){
+    dbg('Start exception: ' + e);
     showToast('Could not start mic — try again');
     isRec = false;
   }
