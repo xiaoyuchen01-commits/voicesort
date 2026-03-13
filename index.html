@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>VoiceSort</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f7f5f0;
+  --card: #ffffff;
+  --border: #e8e4dc;
+  --text: #1a1814;
+  --muted: #9b9488;
+  --accent: #2d5a27;
+  --accent-light: #e8f5e1;
+  --shadow: 0 2px 12px rgba(0,0,0,0.06);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.1);
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  min-height: 100vh;
+  max-width: 480px;
+  margin: 0 auto;
+}
+.app { padding-bottom: 40px; }
+
+/* Header */
+header {
+  padding: 22px 20px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.logo { font-family:'Instrument Serif',serif; font-size:26px; letter-spacing:-0.5px; }
+.logo em { font-style:italic; color:var(--accent); }
+.total-pill {
+  background:var(--accent); color:white;
+  font-size:11px; font-weight:700;
+  padding:4px 12px; border-radius:20px; letter-spacing:0.05em;
+}
+
+/* Record */
+.record-section {
+  padding:24px 20px 14px;
+  display:flex; flex-direction:column; align-items:center; gap:12px;
+}
+.record-ring { position:relative; width:88px; height:88px; }
+.pulse-ring {
+  position:absolute; inset:-8px; border-radius:50%;
+  border:2px solid #e74c3c; opacity:0;
+}
+.recording .pulse-ring { animation: pulse 1.5s ease-out infinite; }
+@keyframes pulse {
+  0% { transform:scale(1); opacity:0.5; }
+  100% { transform:scale(1.4); opacity:0; }
+}
+.record-btn {
+  width:88px; height:88px; border-radius:50%;
+  background:var(--card); border:2px solid var(--border);
+  box-shadow:var(--shadow-lg); cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:all 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  outline:none; position:relative; z-index:1;
+}
+.record-btn:active { transform:scale(0.93); }
+.record-btn.on { background:#fff5f5; border-color:#e74c3c; }
+.mic-svg { width:32px; height:32px; }
+.record-state {
+  font-size:12px; font-weight:700; color:var(--muted);
+  letter-spacing:0.08em; text-transform:uppercase;
+}
+.record-state.live { color:#e74c3c; }
+
+/* Transcript */
+.tx-wrap {
+  margin:0 20px;
+  background:var(--card); border:1.5px solid var(--border);
+  border-radius:16px; padding:14px 16px; min-height:54px;
+  box-shadow:var(--shadow); transition:border-color 0.2s;
+}
+.tx-wrap.listening { border-color:#e74c3c; }
+.tx-wrap.done { border-color:var(--accent); }
+.tx-inner { font-size:14px; line-height:1.65; }
+.ph { color:var(--muted); font-style:italic; font-size:13px; }
+
+/* Processing */
+.proc {
+  margin:10px 20px 0; display:none;
+  align-items:center; gap:8px;
+  font-size:12px; font-weight:600; color:var(--muted);
+}
+.proc.show { display:flex; }
+.dots span {
+  display:inline-block; width:4px; height:4px;
+  background:var(--accent); border-radius:50%;
+  animation:db 1.2s infinite; margin-right:2px;
+}
+.dots span:nth-child(2) { animation-delay:.2s; }
+.dots span:nth-child(3) { animation-delay:.4s; }
+@keyframes db {
+  0%,80%,100% { transform:translateY(0); opacity:.4; }
+  40% { transform:translateY(-5px); opacity:1; }
+}
+
+/* Section */
+.sec-head {
+  padding:20px 20px 10px;
+  display:flex; justify-content:space-between; align-items:center;
+}
+.sec-label {
+  font-size:11px; font-weight:700;
+  letter-spacing:0.1em; text-transform:uppercase; color:var(--muted);
+}
+.add-cat {
+  background:none; border:1.5px dashed var(--border);
+  color:var(--muted); font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:11px; font-weight:600; padding:5px 12px;
+  border-radius:20px; cursor:pointer; transition:all .2s;
+}
+.add-cat:hover { border-color:var(--accent); color:var(--accent); }
+
+/* Cards */
+.cats { padding:0 20px; display:flex; flex-direction:column; gap:8px; }
+.cat-card {
+  background:var(--card); border:1.5px solid var(--border);
+  border-radius:16px; overflow:hidden; box-shadow:var(--shadow);
+}
+.cat-card.flash { animation:fl 0.8s ease forwards; }
+@keyframes fl {
+  0% { box-shadow:0 0 0 4px rgba(45,90,39,0.25); }
+  100% { box-shadow:var(--shadow); }
+}
+.cat-head {
+  display:flex; align-items:center; gap:10px;
+  padding:13px 15px; cursor:pointer; user-select:none;
+}
+.cat-stripe { width:4px; height:28px; border-radius:4px; flex-shrink:0; }
+.cat-name { font-weight:700; font-size:14px; flex:1; }
+.cat-cnt {
+  background:var(--bg); border:1px solid var(--border);
+  font-size:11px; font-weight:700; color:var(--muted);
+  padding:2px 9px; border-radius:10px;
+}
+.chevron { font-size:11px; color:var(--muted); transition:transform .2s; }
+.cat-card.open .chevron { transform:rotate(180deg); }
+.cat-body { display:none; border-top:1px solid var(--border); }
+.cat-card.open .cat-body { display:block; }
+
+.note-row {
+  display:flex; gap:10px; align-items:flex-start;
+  padding:10px 15px; border-bottom:1px solid var(--border);
+  animation:ni .2s ease;
+}
+.note-row:last-of-type { border-bottom:none; }
+@keyframes ni { from{opacity:0;transform:translateX(-6px)} to{opacity:1;transform:translateX(0)} }
+.note-time {
+  font-size:10px; color:var(--muted); font-weight:600;
+  font-variant-numeric:tabular-nums; margin-top:3px;
+  flex-shrink:0; min-width:36px;
+}
+.note-txt { flex:1; font-size:13px; line-height:1.55; }
+.del-btn {
+  background:none; border:none; cursor:pointer;
+  font-size:13px; color:var(--muted);
+  opacity:0; transition:opacity .15s; padding:2px; flex-shrink:0;
+}
+.note-row:hover .del-btn { opacity:1; }
+.cat-footer {
+  display:flex; gap:6px; padding:8px 15px;
+  border-top:1px solid var(--border); flex-wrap:wrap;
+}
+.foot-btn {
+  background:var(--bg); border:1px solid var(--border);
+  color:var(--muted); font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:11px; font-weight:600; padding:5px 12px;
+  border-radius:8px; cursor:pointer; transition:all .15s;
+}
+.foot-btn:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-light); }
+.foot-btn.keep:hover { border-color:#f9a825; color:#8a6100; background:#fffde7; }
+.foot-btn.danger:hover { border-color:#e74c3c; color:#e74c3c; background:#fff5f5; }
+.empty-note { padding:14px 15px; font-size:12px; color:var(--muted); font-style:italic; text-align:center; }
+
+/* API warn */
+.api-warn {
+  margin:0 20px 10px;
+  background:#fff8e6; border:1px solid #f4c842;
+  border-radius:10px; padding:9px 13px;
+  font-size:12px; color:#8a6b00; display:none;
+}
+
+/* Overlays */
+.overlay {
+  display:none; position:fixed; inset:0;
+  background:rgba(26,24,20,.55); z-index:50;
+  backdrop-filter:blur(6px);
+  align-items:flex-end; justify-content:center;
+}
+.overlay.show { display:flex; }
+.modal {
+  background:var(--card); border-radius:24px 24px 0 0;
+  padding:28px 20px 36px; width:100%; max-width:480px;
+  animation:mu .28s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes mu { from{transform:translateY(50px);opacity:0} to{transform:translateY(0);opacity:1} }
+.modal-title { font-family:'Instrument Serif',serif; font-size:22px; margin-bottom:18px; }
+.modal input {
+  width:100%; background:var(--bg); border:1.5px solid var(--border);
+  border-radius:12px; padding:13px 15px;
+  font-family:'Plus Jakarta Sans',sans-serif; font-size:14px;
+  color:var(--text); outline:none; margin-bottom:14px; transition:border-color .2s;
+}
+.modal input:focus { border-color:var(--accent); }
+.swatch-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+.swatch {
+  width:30px; height:30px; border-radius:50%; cursor:pointer;
+  border:3px solid transparent; transition:all .15s;
+}
+.swatch:hover, .swatch.sel { border-color:var(--text); transform:scale(1.1); }
+.modal-btns { display:flex; gap:10px; }
+.btn-green {
+  flex:1; background:var(--accent); color:white; border:none;
+  border-radius:12px; padding:14px;
+  font-family:'Plus Jakarta Sans',sans-serif; font-weight:700; font-size:14px;
+  cursor:pointer; transition:opacity .2s;
+}
+.btn-green:hover { opacity:.85; }
+.btn-cancel {
+  background:var(--bg); border:1.5px solid var(--border);
+  border-radius:12px; padding:14px 18px;
+  font-family:'Plus Jakarta Sans',sans-serif; font-size:14px;
+  cursor:pointer; color:var(--muted);
+}
+
+/* Keep modal */
+.keep-modal {
+  background:var(--card); border-radius:24px 24px 0 0;
+  padding:28px 20px 36px; width:100%; max-width:480px;
+  animation:mu .28s cubic-bezier(0.34,1.56,0.64,1);
+}
+.keep-logo { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+.keep-icon {
+  width:38px; height:38px; background:#fbbc04;
+  border-radius:8px; display:flex; align-items:center;
+  justify-content:center; font-size:20px;
+}
+.keep-logo h3 { font-family:'Instrument Serif',serif; font-size:20px; }
+.keep-sub { font-size:13px; color:var(--muted); margin-bottom:14px; line-height:1.6; }
+.keep-preview {
+  background:#fffde7; border:1.5px solid #f4c842;
+  border-radius:12px; padding:14px; margin-bottom:14px;
+  max-height:200px; overflow-y:auto;
+}
+.kp-title { font-weight:700; font-size:13px; color:#8a6b00; margin-bottom:6px; }
+.kp-body { font-size:13px; line-height:1.7; white-space:pre-wrap; }
+.keep-btns { display:flex; gap:8px; margin-bottom:14px; }
+.keep-open {
+  flex:1; background:#fbbc04; color:#1a1814; border:none;
+  border-radius:12px; padding:13px;
+  font-family:'Plus Jakarta Sans',sans-serif; font-weight:700; font-size:13px;
+  cursor:pointer; text-decoration:none; text-align:center;
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  transition:opacity .2s;
+}
+.keep-open:hover { opacity:.85; }
+.keep-copy {
+  background:var(--bg); border:1.5px solid var(--border);
+  border-radius:12px; padding:13px 16px;
+  font-family:'Plus Jakarta Sans',sans-serif; font-size:13px;
+  font-weight:600; cursor:pointer; color:var(--muted); transition:all .15s;
+}
+.keep-copy:hover { border-color:var(--accent); color:var(--accent); }
+.keep-hint { font-size:11px; color:var(--muted); line-height:1.6; text-align:center; }
+
+/* Toast */
+.toast {
+  position:fixed; bottom:28px; left:50%;
+  transform:translateX(-50%) translateY(16px);
+  background:var(--text); color:white;
+  font-weight:600; font-size:13px;
+  padding:10px 20px; border-radius:30px;
+  opacity:0; transition:all .25s ease;
+  pointer-events:none; z-index:99; white-space:nowrap;
+}
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="app">
+
+<header>
+  <div class="logo">Voice<em>Sort</em></div>
+  <div class="total-pill" id="totalPill">0 notes</div>
+</header>
+
+<div class="record-section">
+  <div class="record-ring" id="ringWrap">
+    <div class="pulse-ring"></div>
+    <button class="record-btn" id="recordBtn" onclick="toggleRec()">
+      <svg class="mic-svg" viewBox="0 0 24 24" fill="none">
+        <rect x="9" y="2" width="6" height="11" rx="3" fill="#2d5a27"/>
+        <path d="M5 11a7 7 0 0 0 14 0" stroke="#2d5a27" stroke-width="2" stroke-linecap="round"/>
+        <line x1="12" y1="18" x2="12" y2="22" stroke="#2d5a27" stroke-width="2" stroke-linecap="round"/>
+        <line x1="9" y1="22" x2="15" y2="22" stroke="#2d5a27" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+  <div class="record-state" id="recState">Tap to speak</div>
+</div>
+
+<div class="api-warn" id="apiWarn">⚠️ Speech recognition needs Chrome or Edge on Android. Safari not supported.</div>
+
+<div class="tx-wrap" id="txWrap">
+  <div class="tx-inner" id="txInner"><span class="ph">Your words will appear here…</span></div>
+</div>
+
+<div class="proc" id="proc">
+  <div class="dots"><span></span><span></span><span></span></div>
+  Sorting with AI…
+</div>
+
+<div class="sec-head">
+  <span class="sec-label">Your Notes</span>
+  <button class="add-cat" onclick="openAddModal()">＋ New category</button>
+</div>
+
+<div class="cats" id="catsEl"></div>
+
+</div><!-- .app -->
+
+<!-- Add Category Modal -->
+<div class="overlay" id="addOverlay" onclick="bgClose(event,'addOverlay')">
+  <div class="modal">
+    <div class="modal-title">New Category</div>
+    <input type="text" id="newCatName" placeholder="e.g. Work, Health, Finance…" maxlength="30"/>
+    <div class="swatch-row" id="swatchRow"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeOverlay('addOverlay')">Cancel</button>
+      <button class="btn-green" onclick="submitCat()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Keep Export Modal -->
+<div class="overlay" id="keepOverlay" onclick="bgClose(event,'keepOverlay')">
+  <div class="keep-modal">
+    <div class="keep-logo">
+      <div class="keep-icon">📒</div>
+      <h3>Export to Google Keep</h3>
+    </div>
+    <p class="keep-sub">Copy your notes below, then paste them into a new Google Keep note.</p>
+    <div class="keep-preview">
+      <div class="kp-title" id="kpTitle"></div>
+      <div class="kp-body" id="kpBody"></div>
+    </div>
+    <div class="keep-btns">
+      <a class="keep-open" href="https://keep.google.com" target="_blank" rel="noopener">📒 Open Google Keep</a>
+      <button class="keep-copy" onclick="keepCopy()">📋 Copy</button>
+    </div>
+    <div class="keep-hint">In Keep: tap the ＋ button → paste → done!</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const COLORS = ['#2d7d46','#d4720a','#7b3fbe','#1a6fa8','#c0392b','#16a085','#8e44ad','#2980b9','#d35400','#7f8c8d'];
+
+let cats = [
+  { id:'grocery',  name:'🛒 Groceries',  color:'#2d7d46', notes:[], open:false },
+  { id:'kids',     name:'👨‍👩‍👧 Kids',      color:'#d4720a', notes:[], open:false },
+  { id:'shopping', name:'🛍️ Shopping',   color:'#7b3fbe', notes:[], open:false },
+  { id:'memo',     name:'📝 Memo',        color:'#1a6fa8', notes:[], open:false },
+  { id:'parents',  name:'👴 Parents',     color:'#c0392b', notes:[], open:false },
+  { id:'other',    name:'💡 Other',       color:'#7f8c8d', notes:[], open:false },
+];
+
+let selColor = COLORS[0];
+let recognition = null;
+let isRec = false;
+let finalText = '';
+let keepCopyText = '';
+
+/* ── Render ── */
+function render() {
+  const el = document.getElementById('catsEl');
+  el.innerHTML = '';
+  let total = 0;
+  cats.forEach(cat => {
+    total += cat.notes.length;
+    const card = document.createElement('div');
+    card.className = 'cat-card' + (cat.open ? ' open' : '');
+    card.id = 'cc-' + cat.id;
+
+    const notesH = cat.notes.length === 0
+      ? `<div class="empty-note">No notes yet — say something!</div>`
+      : cat.notes.map((n,i) => `
+          <div class="note-row">
+            <div class="note-time">${n.t}</div>
+            <div class="note-txt">${esc(n.text)}</div>
+            <button class="del-btn" onclick="delNote('${cat.id}',${i})">✕</button>
+          </div>`).join('');
+
+    const footH = cat.notes.length > 0 ? `
+      <div class="cat-footer">
+        <button class="foot-btn keep" onclick="openKeep('${cat.id}')">📒 Send to Keep</button>
+        <button class="foot-btn" onclick="copyAll('${cat.id}')">📋 Copy all</button>
+        <button class="foot-btn danger" onclick="clearCat('${cat.id}')">🗑 Clear</button>
+      </div>` : '';
+
+    card.innerHTML = `
+      <div class="cat-head" onclick="toggleCat('${cat.id}')">
+        <div class="cat-stripe" style="background:${cat.color}"></div>
+        <div class="cat-name">${esc(cat.name)}</div>
+        <div class="cat-cnt">${cat.notes.length}</div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="cat-body">${notesH}${footH}</div>`;
+    el.appendChild(card);
+  });
+  document.getElementById('totalPill').textContent = total + (total===1?' note':' notes');
+}
+
+function toggleCat(id) { const c=cats.find(x=>x.id===id); if(c) c.open=!c.open; render(); }
+function delNote(id,i) { const c=cats.find(x=>x.id===id); if(c){c.notes.splice(i,1); render();} }
+function clearCat(id) { const c=cats.find(x=>x.id===id); if(c){c.notes=[];render();showToast('Cleared');} }
+function copyAll(id) {
+  const c=cats.find(x=>x.id===id);
+  if(!c||!c.notes.length) return;
+  navigator.clipboard.writeText(c.name+'\n'+c.notes.map(n=>'• '+n.text).join('\n'))
+    .then(()=>showToast('Copied!'));
+}
+
+/* ── Google Keep ── */
+function openKeep(id) {
+  const c=cats.find(x=>x.id===id);
+  if(!c||!c.notes.length) return;
+  const body = c.notes.map(n=>'• '+n.text).join('\n');
+  document.getElementById('kpTitle').textContent = c.name;
+  document.getElementById('kpBody').textContent = body;
+  keepCopyText = c.name + '\n' + body;
+  openOverlay('keepOverlay');
+}
+function keepCopy() {
+  navigator.clipboard.writeText(keepCopyText)
+    .then(()=>showToast('Copied! Paste into Google Keep 📒'));
+}
+
+/* ── Speech ── */
+function setupSR() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { document.getElementById('apiWarn').style.display='block'; return false; }
+  recognition = new SR();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+  recognition.onresult = e => {
+    let interim='', final='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal) final+=e.results[i][0].transcript;
+      else interim+=e.results[i][0].transcript;
+    }
+    if(final) finalText+=final;
+    const show=finalText+interim;
+    if(show){
+      document.getElementById('txInner').textContent=show;
+      document.getElementById('txWrap').className='tx-wrap listening';
+    }
+  };
+  recognition.onerror = ()=>stopRec();
+  recognition.onend = ()=>{ if(isRec) try{recognition.start();}catch(e){} };
+  return true;
+}
+
+function toggleRec(){ isRec?stopRec():startRec(); }
+
+function startRec(){
+  if(!recognition&&!setupSR()) return;
+  finalText='';
+  document.getElementById('txInner').innerHTML='<span class="ph">Listening…</span>';
+  document.getElementById('txWrap').className='tx-wrap listening';
+  try{recognition.start();}catch(e){}
+  isRec=true;
+  document.getElementById('recordBtn').classList.add('on');
+  document.getElementById('ringWrap').classList.add('recording');
+  document.getElementById('recState').textContent='Tap to stop';
+  document.getElementById('recState').className='record-state live';
+}
+
+function stopRec(){
+  isRec=false;
+  try{recognition.stop();}catch(e){}
+  document.getElementById('recordBtn').classList.remove('on');
+  document.getElementById('ringWrap').classList.remove('recording');
+  document.getElementById('recState').textContent='Tap to speak';
+  document.getElementById('recState').className='record-state';
+  const text=(finalText||document.getElementById('txInner').textContent).trim();
+  if(text&&text!=='Listening…'){
+    document.getElementById('txWrap').className='tx-wrap done';
+    categorize(text);
+  }
+}
+
+/* ── Categorize ── */
+async function categorize(text){
+  document.getElementById('proc').classList.add('show');
+  const catList=cats.map(c=>`"${c.id}": ${c.name}`).join(', ');
+  const prompt=`You are a smart personal note categorizer. Analyze this spoken note and assign each part to the best matching category. Split into multiple entries if different things belong to different categories.
+
+Categories: ${catList}
+
+Spoken note: "${text}"
+
+Respond ONLY with a JSON array (no markdown, no explanation):
+[{"categoryId":"grocery","note":"clean concise note"}]
+
+Rules:
+- Use exact categoryId values from the list
+- Remove filler words (um, uh, like, so, kind of)
+- Keep notes concise and actionable
+- Split if multiple categories are mentioned
+- Use "${cats[cats.length-1].id}" if nothing else fits`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data=await res.json();
+    const raw=(data.content||[]).map(b=>b.text||'').join('');
+    const items=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    const t=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    items.forEach(item=>{
+      const c=cats.find(x=>x.id===item.categoryId);
+      if(c){c.notes.unshift({text:item.note,t});c.open=true;}
+    });
+    render();
+    items.forEach(item=>{
+      const el=document.getElementById('cc-'+item.categoryId);
+      if(el){el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),900);}
+    });
+    const name=cats.find(c=>c.id===items[0]?.categoryId)?.name||'notes';
+    showToast(items.length>1?`Sorted into ${items.length} categories ✓`:`Added to ${name} ✓`);
+  }catch(err){
+    const t=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    const fb=cats[cats.length-1];
+    fb.notes.unshift({text,t}); fb.open=true; render();
+    showToast('Added to '+fb.name);
+  }
+  document.getElementById('proc').classList.remove('show');
+}
+
+/* ── Add Category ── */
+function openAddModal(){
+  document.getElementById('newCatName').value='';
+  selColor=COLORS[0]; renderSwatches();
+  openOverlay('addOverlay');
+  setTimeout(()=>document.getElementById('newCatName').focus(),120);
+}
+function renderSwatches(){
+  const row=document.getElementById('swatchRow'); row.innerHTML='';
+  COLORS.forEach(c=>{
+    const s=document.createElement('div');
+    s.className='swatch'+(c===selColor?' sel':''); s.style.background=c;
+    s.onclick=()=>{selColor=c;renderSwatches();};
+    row.appendChild(s);
+  });
+}
+function submitCat(){
+  const name=document.getElementById('newCatName').value.trim();
+  if(!name){showToast('Enter a name');return;}
+  cats.push({id:'c'+Date.now(),name,color:selColor,notes:[],open:false});
+  closeOverlay('addOverlay'); render(); showToast('Category added!');
+}
+
+/* ── Overlay helpers ── */
+function openOverlay(id){document.getElementById(id).classList.add('show');}
+function closeOverlay(id){document.getElementById(id).classList.remove('show');}
+function bgClose(e,id){if(e.target.classList.contains('overlay'))closeOverlay(id);}
+
+/* ── Toast ── */
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+render();
+</script>
+</body>
+</html>
