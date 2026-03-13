@@ -449,58 +449,96 @@ function keepCopy() {
     .then(()=>showToast('Copied! Paste into Google Keep 📒'));
 }
 
-/* ── Speech ── */
-function setupSR() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { document.getElementById('apiWarn').style.display='block'; return false; }
-  recognition = new SR();
-  recognition.continuous = true;
-  recognition.interimResults = true;
-  recognition.lang = 'en-US';
-  recognition.onresult = e => {
-    let interim='', final='';
-    for(let i=e.resultIndex;i<e.results.length;i++){
-      if(e.results[i].isFinal) final+=e.results[i][0].transcript;
-      else interim+=e.results[i][0].transcript;
-    }
-    if(final) finalText+=final;
-    const show=finalText+interim;
-    if(show){
-      document.getElementById('txInner').textContent=show;
-      document.getElementById('txWrap').className='tx-wrap listening';
-    }
-  };
-  recognition.onerror = ()=>stopRec();
-  recognition.onend = ()=>{ if(isRec) try{recognition.start();}catch(e){} };
-  return true;
-}
-
-function toggleRec(){ isRec?stopRec():startRec(); }
+/* ── Speech (Android Chrome compatible) ── */
+function toggleRec(){ isRec ? stopRec() : startRec(); }
 
 function startRec(){
-  if(!recognition&&!setupSR()) return;
-  finalText='';
-  document.getElementById('txInner').innerHTML='<span class="ph">Listening…</span>';
-  document.getElementById('txWrap').className='tx-wrap listening';
-  try{recognition.start();}catch(e){}
-  isRec=true;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ document.getElementById('apiWarn').style.display='block'; return; }
+
+  // Always create a fresh instance — Android Chrome requires this
+  recognition = new SR();
+  recognition.continuous = false;      // false works more reliably on Android
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+  recognition.maxAlternatives = 1;
+
+  finalText = '';
+  isRec = true;
+
+  document.getElementById('txInner').innerHTML = '<span class="ph">Listening… speak now</span>';
+  document.getElementById('txWrap').className = 'tx-wrap listening';
   document.getElementById('recordBtn').classList.add('on');
   document.getElementById('ringWrap').classList.add('recording');
-  document.getElementById('recState').textContent='Tap to stop';
-  document.getElementById('recState').className='record-state live';
+  document.getElementById('recState').textContent = 'Tap to stop';
+  document.getElementById('recState').className = 'record-state live';
+
+  recognition.onstart = () => {
+    document.getElementById('txInner').innerHTML = '<span class="ph">🎙️ Listening… speak now</span>';
+  };
+
+  recognition.onresult = e => {
+    let interim = '', final = '';
+    for(let i = 0; i < e.results.length; i++){
+      if(e.results[i].isFinal) final += e.results[i][0].transcript + ' ';
+      else interim += e.results[i][0].transcript;
+    }
+    finalText = final;
+    const show = (final + interim).trim();
+    if(show){
+      document.getElementById('txInner').textContent = show;
+    }
+  };
+
+  recognition.onerror = e => {
+    console.log('SR error:', e.error);
+    if(e.error === 'not-allowed'){
+      document.getElementById('apiWarn').textContent = '⚠️ Microphone permission denied. Please allow mic access in Chrome settings.';
+      document.getElementById('apiWarn').style.display = 'block';
+    } else if(e.error === 'network'){
+      document.getElementById('apiWarn').textContent = '⚠️ Network error — speech recognition needs internet.';
+      document.getElementById('apiWarn').style.display = 'block';
+    }
+    stopRec();
+  };
+
+  recognition.onend = () => {
+    // On Android, recognition stops after silence — auto-restart if still recording
+    if(isRec){
+      const current = document.getElementById('txInner').textContent.trim();
+      if(!current || current.includes('Listening')){ 
+        // nothing captured yet, restart
+        try{ recognition.start(); }catch(e){ stopRec(); }
+      } else {
+        // got something, stop
+        stopRec();
+      }
+    }
+  };
+
+  try{
+    recognition.start();
+  } catch(e){
+    showToast('Could not start mic — try again');
+    isRec = false;
+  }
 }
 
 function stopRec(){
-  isRec=false;
-  try{recognition.stop();}catch(e){}
+  isRec = false;
+  try{ recognition && recognition.stop(); }catch(e){}
   document.getElementById('recordBtn').classList.remove('on');
   document.getElementById('ringWrap').classList.remove('recording');
-  document.getElementById('recState').textContent='Tap to speak';
-  document.getElementById('recState').className='record-state';
-  const text=(finalText||document.getElementById('txInner').textContent).trim();
-  if(text&&text!=='Listening…'){
-    document.getElementById('txWrap').className='tx-wrap done';
+  document.getElementById('recState').textContent = 'Tap to speak';
+  document.getElementById('recState').className = 'record-state';
+
+  const text = finalText.trim() || document.getElementById('txInner').textContent.trim();
+  if(text && !text.includes('Listening') && !text.includes('speak now')){
+    document.getElementById('txWrap').className = 'tx-wrap done';
     categorize(text);
+  } else {
+    document.getElementById('txInner').innerHTML = '<span class="ph">Your words will appear here…</span>';
+    document.getElementById('txWrap').className = 'tx-wrap';
   }
 }
 
