@@ -478,7 +478,26 @@ function startRec(){
     return;
   }
 
-  dbg('Starting recognition...');
+  dbg('Requesting mic permission via getUserMedia first...');
+
+  // Android Chrome requires explicit getUserMedia before SpeechRecognition works
+  navigator.mediaDevices.getUserMedia({ audio: true })
+    .then(stream => {
+      dbg('getUserMedia granted — stream tracks: ' + stream.getAudioTracks().length);
+      // Stop the raw stream immediately — we just needed the permission grant
+      stream.getTracks().forEach(t => t.stop());
+      dbg('Raw stream stopped — starting SpeechRecognition now...');
+      beginRecognition(SR);
+    })
+    .catch(err => {
+      dbg('getUserMedia DENIED: ' + err.name + ' — ' + err.message);
+      const warn = document.getElementById('apiWarn');
+      warn.textContent = '⚠️ Mic blocked — tap the 🔒 lock icon in address bar → allow Microphone → refresh.';
+      warn.style.display = 'block';
+    });
+}
+
+function beginRecognition(SR){
   recognition = new SR();
   recognition.continuous = false;
   recognition.interimResults = true;
@@ -495,23 +514,20 @@ function startRec(){
   document.getElementById('recState').className = 'record-state live';
 
   recognition.onstart = () => { dbg('onstart fired — mic is active'); };
-
   recognition.onaudiostart = () => { dbg('onaudiostart — audio capturing begun'); };
-
   recognition.onsoundstart = () => { dbg('onsoundstart — sound detected!'); };
-
-  recognition.onspeechstart = () => { dbg('onspeechstart — speech detected!'); };
+  recognition.onspeechstart = () => { dbg('onspeechstart — SPEECH detected!'); };
 
   recognition.onresult = e => {
-    dbg('onresult fired — results: ' + e.results.length);
+    dbg('onresult fired — ' + e.results.length + ' result(s)');
     let interim = '', final = '';
     for(let i = 0; i < e.results.length; i++){
       if(e.results[i].isFinal){
         final += e.results[i][0].transcript + ' ';
-        dbg('Final: ' + e.results[i][0].transcript);
+        dbg('✅ Final: ' + e.results[i][0].transcript);
       } else {
         interim += e.results[i][0].transcript;
-        dbg('Interim: ' + e.results[i][0].transcript);
+        dbg('~ Interim: ' + e.results[i][0].transcript);
       }
     }
     finalText = final;
@@ -519,32 +535,26 @@ function startRec(){
     if(show) document.getElementById('txInner').textContent = show;
   };
 
-  recognition.onnomatch = () => { dbg('onnomatch — no speech matched'); };
+  recognition.onnomatch = () => { dbg('onnomatch — heard sound but no words matched'); };
 
   recognition.onerror = e => {
-    dbg('ERROR: ' + e.error + ' — ' + (e.message||''));
+    dbg('ERROR: ' + e.error);
     const warn = document.getElementById('apiWarn');
-    if(e.error === 'not-allowed'){
-      warn.textContent = '⚠️ Mic blocked — tap the 🔒 lock icon in Chrome address bar and allow microphone.';
-    } else if(e.error === 'network'){
-      warn.textContent = '⚠️ Network error — speech recognition needs internet connection.';
-    } else if(e.error === 'no-speech'){
-      warn.textContent = '⚠️ No speech detected — try speaking louder or closer to the mic.';
-    } else {
-      warn.textContent = '⚠️ Error: ' + e.error;
-    }
+    if(e.error === 'not-allowed') warn.textContent = '⚠️ Mic blocked — allow microphone in site settings.';
+    else if(e.error === 'network') warn.textContent = '⚠️ Network error — speech recognition needs internet.';
+    else if(e.error === 'no-speech') warn.textContent = '⚠️ No speech heard — try speaking louder.';
+    else warn.textContent = '⚠️ Error: ' + e.error;
     warn.style.display = 'block';
     stopRec();
   };
 
   recognition.onend = () => {
-    dbg('onend — finalText: "' + finalText.trim() + '"');
+    dbg('onend fired — finalText: "' + finalText.trim() + '"');
     if(isRec){
       if(finalText.trim()){
         stopRec();
       } else {
-        // restart if nothing captured
-        dbg('Restarting...');
+        dbg('Nothing captured — restarting...');
         try{ recognition.start(); }catch(e){ dbg('Restart failed: '+e); stopRec(); }
       }
     }
@@ -555,7 +565,7 @@ function startRec(){
     dbg('recognition.start() called');
   } catch(e){
     dbg('Start exception: ' + e);
-    showToast('Could not start mic — try again');
+    showToast('Could not start — try again');
     isRec = false;
   }
 }
