@@ -331,188 +331,178 @@ function toggleRec(){ isRec ? stopRec() : startRec(); }
 
 async function startRec(){
   try {
+    // Step 1: get mic permission via getUserMedia
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    log('✅ Mic granted');
 
-    // Pick best supported format
-    const mimeType = ['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/ogg','audio/mp4']
-      .find(t => MediaRecorder.isTypeSupported(t)) || '';
+    // Step 2: immediately release stream so Speech Recognition can use mic
+    stream.getTracks().forEach(t => t.stop());
 
-    mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
-    audioChunks = [];
+    // Step 3: start Web Speech Recognition now that permission is confirmed
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if(!SR){ showWarn('Speech Recognition not supported'); return; }
 
-    mediaRecorder.ondataavailable = e => {
-      if(e.data && e.data.size > 0) audioChunks.push(e.data);
-    };
+    const recognition = new SR();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
 
-    mediaRecorder.onstop = async () => {
-      stream.getTracks().forEach(t => t.stop());
-      const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
-      await processAudio(blob);
-    };
-
-    mediaRecorder.start(250); // collect chunks every 250ms
+    let finalText = '';
     isRec = true;
 
-    // UI
+    // UI on
     document.getElementById('recordBtn').classList.add('on');
     document.getElementById('ringWrap').classList.add('recording');
     document.getElementById('recState').textContent = 'Tap to stop';
     document.getElementById('recState').className = 'record-state live';
     document.getElementById('waveform').classList.add('show');
     document.getElementById('recTimer').classList.add('show');
-    document.getElementById('txInner').innerHTML = '<span class="ph">🎙️ Recording… tap to stop</span>';
+    document.getElementById('txInner').innerHTML = '<span class="ph">🎙️ Listening… speak now</span>';
     document.getElementById('txWrap').className = 'tx-wrap listening';
     document.getElementById('warnBox').style.display = 'none';
 
-    // Timer
     timerSecs = 0;
     timerInterval = setInterval(() => {
       timerSecs++;
       const m = Math.floor(timerSecs/60);
       const s = String(timerSecs%60).padStart(2,'0');
       document.getElementById('recTimer').textContent = m+':'+s;
-      // Auto-stop at 60 seconds
-      if(timerSecs >= 60) stopRec();
+      if(timerSecs >= 60) stopCurrentRec();
     }, 1000);
 
-  } catch(err) {
-    const warn = document.getElementById('warnBox');
-    warn.textContent = '⚠️ Mic access denied — tap the 🔒 lock in Chrome address bar → allow Microphone → refresh.';
-    warn.style.display = 'block';
+    recognition.onresult = e => {
+      let interim = '', final = '';
+      for(let i = 0; i < e.results.length; i++){
+        if(e.results[i].isFinal) final += e.results[i][0].transcript + ' ';
+        else interim += e.results[i][0].transcript;
+      }
+      finalText = final;
+      const show = (final + interim).trim();
+      if(show) document.getElementById('txInner').textContent = show;
+    };
+
+    recognition.onerror = e => {
+      log('SR error: ' + e.error);
+      if(e.error !== 'aborted') stopCurrentRec();
+    };
+
+    recognition.onend = () => {
+      if(isRec && !finalText.trim()){
+        try{ recognition.start(); }catch(e){ stopCurrentRec(); }
+      } else if(finalText.trim()){
+        stopCurrentRec();
+      }
+    };
+
+    // Store stop function
+    window._stopRec = () => {
+      isRec = false;
+      clearInterval(timerInterval);
+      try{ recognition.stop(); }catch(e){}
+      // UI off
+      document.getElementById('recordBtn').classList.remove('on');
+      document.getElementById('ringWrap').classList.remove('recording');
+      document.getElementById('recState').textContent = 'Tap to speak';
+      document.getElementById('recState').className = 'record-state';
+      document.getElementById('waveform').classList.remove('show');
+      document.getElementById('recTimer').classList.remove('show');
+
+      if(finalText.trim()){
+        document.getElementById('txWrap').className = 'tx-wrap done';
+        categorize(finalText.trim());
+      } else {
+        document.getElementById('txInner').innerHTML = '<span class="ph">Your words will appear here…</span>';
+        document.getElementById('txWrap').className = 'tx-wrap';
+        showWarn('No speech detected — try speaking louder and closer to the mic.');
+      }
+    };
+
+    recognition.start();
+    log('SR started after getUserMedia');
+
+  } catch(err){
+    showWarn('Mic access denied — tap 🔒 in address bar → allow Microphone → refresh.');
+    log('Error: ' + err.name);
   }
 }
 
-function stopRec(){
-  if(!mediaRecorder || mediaRecorder.state === 'inactive') return;
-  clearInterval(timerInterval);
-  mediaRecorder.stop();
-  isRec = false;
-
-  document.getElementById('recordBtn').classList.remove('on');
-  document.getElementById('ringWrap').classList.remove('recording');
-  document.getElementById('recState').textContent = 'Tap to speak';
-  document.getElementById('recState').className = 'record-state';
-  document.getElementById('waveform').classList.remove('show');
-  document.getElementById('recTimer').classList.remove('show');
+function stopCurrentRec(){
+  if(window._stopRec) window._stopRec();
 }
 
-/* ── Send audio to Claude for transcription + categorization ── */
-async function processAudio(blob){
-  document.getElementById('procLabel').textContent = 'Transcribing…';
+function stopRec(){
+  if(isRec) stopCurrentRec();
+}
+
+function showWarn(msg){
+  const w = document.getElementById('warnBox');
+  w.textContent = '⚠️ ' + msg;
+  w.style.display = 'block';
+}
+
+/* ── Categorize with Claude ── */
+async function categorize(text){
+  document.getElementById('procLabel').textContent = 'Categorizing…';
   document.getElementById('proc').classList.add('show');
-  document.getElementById('txInner').innerHTML = '<span class="ph">Processing your voice…</span>';
+
+  const catList = cats.map(c => `"${c.id}": ${c.name}`).join(', ');
+  const prompt = `Categorize this spoken note into the right categories.
+
+Categories: ${catList}
+
+Note: "${text}"
+
+Respond ONLY with JSON array (no markdown):
+[{"categoryId":"grocery","note":"concise note"}]
+
+Rules: use exact categoryId, remove filler words, split if multiple categories, use "other" if unclear.`;
 
   try {
-    // Convert blob to base64
-    const base64 = await blobToBase64(blob);
-    const base64Data = base64.split(',')[1];
-    const mimeType = blob.type || 'audio/webm';
-
-    const catList = cats.map(c => `"${c.id}": ${c.name}`).join(', ');
-
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: `You will receive an audio recording. Please:
-1. Transcribe exactly what was said
-2. Categorize the content into the appropriate categories
-
-Available categories: ${catList}
-
-Respond ONLY with a JSON object (no markdown):
-{
-  "transcript": "what was said",
-  "items": [{"categoryId": "grocery", "note": "clean concise note"}]
-}
-
-Rules for items:
-- Use exact categoryId values
-- Remove filler words (um, uh, like)
-- Keep notes concise and actionable
-- Split into multiple items if multiple categories mentioned
-- Use "other" if nothing else fits`
-            },
-            {
-              type: 'document',
-              source: {
-                type: 'base64',
-                media_type: mimeType,
-                data: base64Data
-              }
-            }
-          ]
-        }]
+        messages: [{ role: 'user', content: prompt }]
       })
     });
 
     const data = await res.json();
+    if(data.error) throw new Error(data.error.message);
 
-    // Check for API error
-    if(data.error){
-      throw new Error(data.error.message || 'API error');
-    }
-
-    const raw = (data.content || []).map(b => b.text || '').join('');
-    const parsed = JSON.parse(raw.replace(/```json|```/g,'').trim());
-
-    // Show transcript
-    if(parsed.transcript){
-      document.getElementById('txInner').textContent = parsed.transcript;
-      document.getElementById('txWrap').className = 'tx-wrap done';
-    }
-
-    // Add notes
-    document.getElementById('procLabel').textContent = 'Categorizing…';
+    const raw = (data.content||[]).map(b=>b.text||'').join('');
+    const items = JSON.parse(raw.replace(/```json|```/g,'').trim());
     const t = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-    (parsed.items || []).forEach(item => {
+
+    items.forEach(item => {
       const c = cats.find(x => x.id === item.categoryId);
       if(c){ c.notes.unshift({text: item.note, t}); c.open = true; }
     });
 
     render();
-
-    (parsed.items || []).forEach(item => {
+    items.forEach(item => {
       const el = document.getElementById('cc-'+item.categoryId);
       if(el){ el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),900); }
     });
 
-    const count = (parsed.items||[]).length;
-    const name = cats.find(c=>c.id===parsed.items?.[0]?.categoryId)?.name||'notes';
-    showToast(count > 1 ? `Sorted into ${count} categories ✓` : `Added to ${name} ✓`);
+    const count = items.length;
+    const name = cats.find(c=>c.id===items[0]?.categoryId)?.name||'notes';
+    showToast(count>1 ? `Sorted into ${count} categories ✓` : `Added to ${name} ✓`);
 
-  } catch(err) {
-    console.error(err);
-    // Show error with helpful message
-    const warn = document.getElementById('warnBox');
-
-    if(err.message && err.message.includes('audio')){
-      warn.textContent = '⚠️ Audio format not supported. Try speaking for at least 2 seconds.';
-    } else {
-      warn.textContent = '⚠️ Could not process audio: ' + (err.message || 'unknown error') + '. Try again.';
-    }
-    warn.style.display = 'block';
-    document.getElementById('txInner').innerHTML = '<span class="ph">Your words will appear here…</span>';
-    document.getElementById('txWrap').className = 'tx-wrap';
+  } catch(err){
+    log('Categorize error: '+err.message);
+    // Fallback — save to Other
+    const t = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    const fb = cats[cats.length-1];
+    fb.notes.unshift({text, t}); fb.open = true; render();
+    showToast('Saved to '+fb.name);
   }
 
   document.getElementById('proc').classList.remove('show');
-}
-
-function blobToBase64(blob){
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
 }
 
 /* ── Add Category ── */
