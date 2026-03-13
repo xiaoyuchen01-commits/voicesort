@@ -469,7 +469,7 @@ function dbg(msg){
 /* ── Speech (Android Chrome compatible) ── */
 function toggleRec(){ isRec ? stopRec() : startRec(); }
 
-let activeStream = null; // keep stream alive during recognition
+let activeStream = null;
 
 function startRec(){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -483,9 +483,12 @@ function startRec(){
   dbg('Requesting mic via getUserMedia...');
   navigator.mediaDevices.getUserMedia({ audio: true })
     .then(stream => {
-      dbg('getUserMedia granted — keeping stream alive');
-      activeStream = stream; // DON'T stop it — keep it alive
-      beginRecognition(SR);
+      dbg('getUserMedia granted — releasing stream, then starting SR...');
+      // Release FIRST, then start SR after a short delay
+      // This grants permission without conflicting for the mic hardware
+      stream.getTracks().forEach(t => t.stop());
+      activeStream = null;
+      setTimeout(() => beginRecognition(SR), 300);
     })
     .catch(err => {
       dbg('getUserMedia DENIED: ' + err.name);
